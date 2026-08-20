@@ -16,8 +16,8 @@ project:
   automation_type: "both"
   description: "An exact copy of the https://catalog.demo.redhat.com/catalog/babylon-catalog-prod?item=babylon-catalog-prod/published.ocp4-adv-app-platform-demo.prod demo CI. The goal of the lab is attendee enablement on this CI and how to effectively demo it."
   # content_reviewer_email and infra_reviewer_email are assigned by the RHDP team — not set by the author
-  jira_ticket: ""
-  workflow_id: ""
+  jira_ticket: "RHDPCD-1123"
+  workflow_id: "e5992e4f-81cf-4201-854e-73b8e30dfd52"
 
 spec:
   title: ""

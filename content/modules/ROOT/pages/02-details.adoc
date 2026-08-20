@@ -1,0 +1,256 @@
+= Environment details and setup
+include::partial$_attributes.adoc[]
+
+*Presenter note*: Review this section before your demo to familiarize yourself with the environment components and access details. Not all components are used in every section — check which section(s) you are presenting. 
+
+== Demo personas
+
+This demo uses two SSO (Keycloak) personas. Both use the common password `{password}`. Use these credentials for the OpenShift console, GitLab, Dev Spaces, and Developer Hub.
+
+* **`{dev_user}`** — Developer persona ("Dave Developer"). Use this when demonstrating the developer experience: DevSpaces, writing code, pushing commits, viewing pipeline results.
+* **`{pe_user}`** — Platform engineer persona ("Paul Platform Engineer"). Use this when demonstrating platform configuration: DevSpaces operator, Service Mesh, production deployments.
+
+When signing into the OpenShift console, will first be prompted to select a login type. Use the `developers` identity provider for the developer and platform engineer personas and enter one of the above usernames and password. If you need to login as the cluster admin, use the built-in `htpasswd` option with the admin credentials (`admin`/`{admin_password}`).
+
+[TIP]
+====
+To avoid constant sign-out/sign-in noise during the demo, keep each persona logged in using a separate browser. For example, use Chrome for the developer persona and Firefox for the platform engineer persona (or use an incognito/private window for the second persona). This lets you switch between personas instantly by switching browser windows.
+====
+
+Other services (SonarQube, Argo CD, Vault) require their own admin credentials — see the access details below.
+
+== Running `oc` commands
+
+In some places, it's easiest to use `oc` to fetch dynamic data like passwords or URLs. You can run `oc` commands via the OpenShift console's built-in terminal. To open the console terminal, click the "_>" icon in the top right of the console header. This opens a terminal pane with a command prompt that has `oc` already configured and logged in as your user.
+
+== Environment namespaces
+
+Throughout the modules you'll work on applications belonging to a fictitious company named Parasol. The following lists explain each application namespace and why it exists. Notice that we use new namespaces in each module to avoid conflicts and start from a clean slate, or to separate personal developer environments from shared environments.
+
+=== Section 1: Foundational application platform
+
+* **`parasol-insurance-dev`** — Development environment for the Parasol application. Receives deployments from the CI/CD pipeline on every code push.
+* **`parasol-insurance-prod`** — Production environment. Deployments are controlled through GitOps (Argo CD) with manual approval gates via GitLab merge requests.
+* **`parasol-insurance-build`** — Contains Tekton pipeline definitions, EventListeners, and build tasks. Pipeline runs execute here, not in the dev/prod namespaces.
+
+=== Section 2: Secured supply chain
+
+* **`parasol-insurance-secured-dev`** — Development environment with the full secure supply chain — ACS vulnerability scanning, image signing (TAS), SBOM generation, and SLSA attestation via Tekton Chains.
+* **`parasol-insurance-secured-prod`** — Secured production environment. Promotion requires two manual gates: a code merge request approval + tag creation, and a GitOps merge request approval.
+* **`parasol-insurance-secured-build`** — Secured build pipeline namespace. Contains the main EventListener and pipelines for both feature branch builds and production tag promotions.
+
+=== Per-user namespaces
+
+* **`<username>-devspaces`** — Auto-provisioned by DevSpaces for each developer's cloud IDE workspaces and associated PVCs.
+* **`parasol-insurance-secured-<username>`** — Created via the Developer Hub "Parasol Insurance Secured Development" golden path template. Each developer gets an isolated namespace with its own pipeline and Argo CD application for their feature branch.
+
+== Environment components
+
+=== Section 1: Foundational application platform
+
+* **Red Hat OpenShift Container Platform** {ocp_version} - The foundational platform
+* **Migration Toolkit for Applications** {mta_version} - Application modernization and migration analysis (discussed in Module 1, not shown live)
+* **Red Hat OpenShift Dev Spaces** {devspaces_version} - Cloud development environments with AI code assistance
+* **Red Hat build of Quarkus** {quarkus_version} - Cloud native Java runtime (featured application)
+* **Red Hat OpenShift Pipelines** {pipelines_version} - Tekton-based CI/CD pipelines
+* **SonarQube** - Static analysis and code quality enforcement
+* **Red Hat OpenShift GitOps** {gitops_version} - Argo CD for GitOps delivery
+* **Red Hat OpenShift Service Mesh** {servicemesh_version} - Istio-based traffic management and security
+* **Kiali** - Service mesh observability console (the OpenShift console refers to this as the "Service Mesh" menu)
+* **Red Hat OpenShift monitoring stack** {monitoring_version} - Prometheus, Grafana, and AlertManager
+* **HashiCorp Vault** - External secrets management
+* **External Secrets Operator** - Syncs secrets from Vault into Kubernetes
+
+=== Section 2: Advanced developer services
+
+* **Red Hat Developer Hub** {rhdh_version} - Developer portal with catalog, templates, and self-service
+* **Developer Lightspeed** - AI-assisted development within Developer Hub
+* **Red Hat Advanced Cluster Security for Kubernetes** {acs_version} - Vulnerability scanning and policy enforcement
+* **Red Hat Trusted Artifact Signer** {tas_version} - Image signing, verification
+* **Tekton Chains** {tekton_chains_version} - Automated image signing, SBOM generation, and SLSA attestation
+* **Red Hat Trusted Profile Analyzer** {tpa_version} - SBOM management and vulnerability tracking
+* **Dependency Analytics** - IDE plugin for real-time dependency vulnerability scanning
+* **Apache Kafka** - Event streaming for business data (pre-existing in the demo environment) (also used in section 3)
+
+=== Section 3: Intelligent applications
+
+* **LLM endpoint** — Hosted on the Red Hat Demo Platform's LiteMaaS instance[https://litellm-prod-frontend.apps.maas.redhatworkshops.io/models]. In production, organizations can use Red Hat AI on-premises or any hosted model provider
+* **Apache Kafka** - Event streaming for business data (pre-existing in the demo environment)
+
+== Access details
+
+=== OpenShift console
+
+* URL: {console_url}[{console_url}^]
+* Developer persona: `{dev_user}` / `{password}` (use the "developers" login option)
+* Platform engineer persona: `{pe_user}` / `{password}` (use the "developers" login option)
+* Cluster Admin: `admin` / `{admin_password}` (use the "htpasswd" login option)
+
+=== OpenShift DevSpaces
+
+* URL: {devspaces_url}[{devspaces_url}^]
+* Login as `{dev_user}` / `{password}` (developer persona)
+
+=== GitLab (Git server)
+
+* URL: {gitlab_url}[{gitlab_url}^]
+* Login as `{dev_user}` / `{password}` (developer persona) or `{pe_user}` / `{password}` (platform engineer persona)
+
+=== SonarQube
+
+* URL: {sonarqube_url}[{sonarqube_url}^]
+* Login as `admin`
+* Password: retrieve from the `sonarqube-admin` secret in the `sonarqube` namespace:
++
+[source,bash,role="copypaste"]
+----
+oc get secret sonarqube-admin -n sonarqube -o jsonpath='{.data.password}' | base64 -d
+----
+
+=== Argo CD
+
+There are two Argo CD instances in this environment:
+
+**rhdh-gitops (application delivery — use this for the demo)**
+
+* URL: {argocd_url}[{argocd_url}^]
+* This is where the Parasol application is deployed through GitOps. Demoers will use this instance when showing continuous deployment in Modules 2 and 3.
+* Login as `admin`
+* Password: retrieve from the `rhdh-gitops-cluster` secret in the `rhdh-gitops` namespace:
++
+[source,bash,role="copypaste"]
+----
+oc get secret rhdh-gitops-cluster -n rhdh-gitops -o jsonpath='{.data.admin\.password}' | base64 -d
+----
+
+**openshift-gitops (bootstrap — for debugging the demo environment only)**
+
+* URL: {argocd_bootstrap_url}[{argocd_bootstrap_url}^]
+* This instance manages the environment itself (app-of-apps pattern). Useful for troubleshooting if demo components are not deploying correctly. Not shown during the demo.
+* Login as `admin`
+* Password: retrieve from the `openshift-gitops-cluster` secret in the `openshift-gitops` namespace:
++
+[source,bash,role="copypaste"]
+----
+oc get secret openshift-gitops-cluster -n openshift-gitops -o jsonpath='{.data.admin\.password}' | base64 -d
+----
+
+=== Service Mesh console (Kiali)
+
+* Accessible through the **Service Mesh** top-level menu in the OpenShift console
+* Login to the OpenShift console as `{pe_user}` / `{password}` (platform engineer persona) or cluster admin
+
+=== Tekton pipelines
+
+* Accessible through the OpenShift console under **Pipelines** in the `{parasol_build_ns}` namespace (and their secured counterparts in section 2)
+* Login as `{dev_user}` / `{password}` or `{pe_user}` / `{password}`
+
+=== Red Hat Developer Hub (Sections 2-3)
+
+* URL: {rhdh_url}[{rhdh_url}^]
+* Login as `{dev_user}` / `{password}` (developer persona) or `{pe_user}` / `{password}` (platform engineer persona)
+
+=== Trusted Profile Analyzer (Section 2)
+
+* URL: {tpa_url}[{tpa_url}^]
+* Login with OpenShift credentials
+
+=== Vault (Section 1)
+
+* URL: {vault_url}[{vault_url}^]
+* Secrets browser: {vault_secrets_url}[{vault_secrets_url}^]
+* Login with the root token. Retrieve it from the `vault-token` secret in the `vault` namespace:
++
+[source,bash,role="copypaste"]
+----
+oc get secret vault-token -n vault -o jsonpath='{.data.token}' | base64 -d
+----
+
+=== LLM endpoint (Section 3)
+
+* API base URL: {llm_endpoint_url}[{llm_endpoint_url}^]
+* API key: {llm_api_key}
+
+== Demo application
+
+The demo application is the **Parasol Insurance** web application, a Quarkus-based microservices application that handles policy management, claims processing, and customer interactions. Parasol migrated this application from a legacy Java EE platform to Quarkus on OpenShift using the Migration Toolkit for Applications (MTA).
+
+In section 1 (foundational), the application has two environments:
+
+* **Dev**: `{parasol_dev_ns}` namespace — parasol-insurance-{parasol_dev_ns}.{subdomain}
+* **Prod**: `{parasol_prod_ns}` namespace — parasol-insurance-{parasol_prod_ns}.{subdomain}
+
+The Tekton pipeline and build resources are in the `{parasol_build_ns}` namespace.
+
+In Section 2, the application and all its components are registered in the Red Hat Developer Hub catalog as a "system" with linked components (frontend, backend, Kafka, database). They land in parasol-insurance-secured-dev and parasol-insurance-secured-prod namespaces, with a secure build pipeline that includes ACS, TAS, and Tekton Chains but you don't necessarily need to visit these namespaces, as RHDH acts as the 'single pane of glass', for visualizing topologies, pipelines, argo apps, and more.
+
+In Section 3, the application is extended with an AI-enhanced component that consumes the LLM endpoint and processes business data from Kafka.
+
+== Pre-demo checklist
+
+[WARNING]
+====
+**Resurrected clusters:** If you stopped a running demo cluster and later restarted it, the Istio ambient service mesh may fail to re-establish `HBONE` tunnels to existing pods. This causes the Parasol application to fail to connect to its PostgreSQL database, and pipelines that attempt to restart the application will fail. If you encounter this, restart the database and application pods in the affected namespaces by running the following commands in the OpenShift console terminal:
+
+[source,bash,role="copypaste"]
+----
+for ns in $(oc get deployment -A -l app=parasol-db -o jsonpath='{range .items[*]}{.metadata.namespace}{"\n"}{end}'); do
+  echo "Restarting parasol-db in $ns"
+  oc rollout restart deployment -l app=parasol-db -n $ns
+done
+for ns in $(oc get deployment -A -l app=parasol-db -o jsonpath='{range .items[*]}{.metadata.namespace}{"\n"}{end}'); do
+  echo "Waiting for parasol-db in $ns"
+  oc rollout status deployment -l app=parasol-db -n $ns --timeout=60s -w
+done
+oc get deployment -A -l 'app in (parasol-insurance,parasol-insurance-secured)' -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{"\n"}{end}' | while read ns name; do
+  echo "Restarting $name in $ns"
+  oc rollout restart deployment/$name -n $ns
+done
+----
+
+The commands will take about 1-2 minutes to complete. Wait for all rollouts to finish before proceeding with the demo.
+====
+
+=== Section 1
+
+. Log into the OpenShift console at {console_url}[{console_url}^] as `{dev_user}` / `{password}`
+. Navigate to **Workloads → Topology** and select the `{parasol_dev_ns}` namespace. Confirm you see the Parasol application topology 
+. Open Dev Spaces by clicking the "Edit Source Code" link on the Parasol application — confirm the dashboard loads
+. Verify the AI code assistant works: Once DevSpaces opens, wait for the Roo Code extension to initialize (this may take a few minutes on first launch). Open it and give it a good "Hello" prompt.
+. Open SonarQube at {sonarqube_url}[{sonarqube_url}^] and log in as `admin` (retrieve password from `sonarqube-admin` secret in the `sonarqube` namespace)
+. Open the `rhdh-gitops` Argo CD at {argocd_url}[{argocd_url}^] and log in as `admin` using password `{password}`. It is expected that the `-secured` Argo CD applications may not be fully healthy at this point — they will resolve once the secured pipeline runs for the first time in Section 2
+. Verify the Tekton pipeline is visible in the OpenShift console: navigate to **Pipelines** in the `{parasol_build_ns}` namespace
+. Log into the OpenShift console as `{pe_user}` / `{password}` and open **Service Mesh → Overview** to confirm it loads, then check **Service Mesh → Traffic Graph** to confirm the traffic graph renders (you'll need to select the `{parasol-dev_ns}` and `kafka` namespace and click "Apply" to see the Parasol services). Turn on Traffic Animation in the *Display* menu for added visual effect (since nothing is currently happening in the app it won't show much).
+. Verify Vault is accessible at {vault_url}[{vault_url}^]:
+.. Retrieve the root token with
++
+[source,bash,role="copypaste"]
+----
+oc get secret vault-token -n vault -o jsonpath='\{.data.token}' | base64 -d
+----
++
+.. Log in with the root token and verify Parasol secrets are configured at {vault_secrets_url}[{vault_secrets_url}^]
+
+=== Section 2 (in addition to Section 1)
+
+. Open Red Hat Developer Hub at {rhdh_url}[{rhdh_url}^] and log in as `{dev_user}` / `{password}` — confirm the catalog loads
+. Verify the Parasol system and its components are registered in the catalog
+. Confirm software templates are available in the "Create" section (look for the _Parasol Insurance Secured Development_ template)
+. Open TPA at {tpa_url}[{tpa_url}^] — the *SBOMs* tab will be empty at this point, which is expected since no pipelines have run yet. Instead, check the *Vulnerabilities* tab to confirm vulnerability data has been downloaded, and the *Importers* tab to confirm the `osv-github` importer is running (> 0% progress)
+. Open GitLab at {gitlab_url}[{gitlab_url}^] and log in as `{dev_user}` / `{password}` — confirm repository access
+
+=== Section 3 (in addition to Sections 1-2)
+
+. Verify the LLM endpoint is serving by running the following command in the OpenShift console terminal (if your code assistant in DevSpaces worked above, you can skip this):
++
+[source,bash,role="copypaste",subs="attributes+"]
+----
+curl -s -H "Authorization: Bearer {llm_api_key}" {llm_endpoint_url}/models | jq .
+----
++
+You should see a JSON object with a list of available models if the LLM endpoint is working correctly.
+
+[TIP]
+====
+**Presenter tip:** Open all the URLs in separate browser tabs before starting. This avoids waiting for pages to load during the live demo. Retrieve all passwords (SonarQube, Argo CD, Vault) ahead of time and keep them in a text file. For Section 2, consider pre-loading the pipeline view. For Section 3, verify the LLM endpoint is responding before starting.
+====

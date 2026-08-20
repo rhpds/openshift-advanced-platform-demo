@@ -1,0 +1,38 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: openshift-advanced-platform-demo
+  title: openshift-advanced-platform-demo
+  description: An exact copy of the
+    https://catalog.demo.redhat.com/catalog/babylon-catalog-prod?item=babylon-catalog-prod/published.ocp4-adv-app-platform-demo.prod
+    demo CI. The goal of the lab is attendee enablement on this CI and how to
+    effectively demo it.
+  annotations:
+    ph.rhdp.io/content-type: lab
+    ph.rhdp.io/deployment-mode: rhdp_published
+    ph.rhdp.io/github-user: markusjnagel
+    ph.rhdp.io/owner: mnagel@redhat.com
+    ph.rhdp.io/migrated-repo: https://github.com/rhpds/adv-app-platform-demo-showroom
+    backstage.io/techdocs-ref: dir:.
+    github.com/project-slug: rhpds/openshift-advanced-platform-demo
+    ph.rhdp.io/created-at: 2026-08-20T18:53:02.030Z
+  tags:
+    - publishing-house
+    - lab
+    - rhdp-published
+    - migration
+  links:
+    - url: https://github.com/rhpds/openshift-advanced-platform-demo
+      title: Repository
+      icon: github
+    - url: https://devspaces.apps.ocpv-infra02.wdc07.infra.demo.redhat.com#https://github.com/rhpds/openshift-advanced-platform-demo
+      title: Open in DevSpaces
+      icon: catalog
+    - url: https://central-api-publishing-house.apps.ocpv-infra02.wdc07.infra.demo.redhat.com
+      title: Central
+      icon: dashboard
+spec:
+  type: content
+  lifecycle: experimental
+  owner: rhdp-team
+  system: publishing-house

@@ -120,8 +120,22 @@ approval_checklist:
     prerequisites_verifiable: false
     assessment_strategy: ""
     catalog_gap: ""
-    design_overview: ""
-    module_summaries: []
+    design_overview: "A 2.5-hour advanced hands-on lab enabling sales engineers and solution architects to deliver the OpenShift Advanced Application Platform demo. Covers seven modules spanning the full application lifecycle: developer inner loop (Dev Spaces, Quarkus), CI/CD (Tekton, Argo CD), platform operations (Service Mesh, autoscaling, Vault), Developer Hub self-service, software supply chain security (ACS, TAS, Tekton Chains, Conforma), and AI-enhanced applications (LangChain4j, LLM integration)."
+    module_summaries:
+      - title: "Developer Experience"
+        overview: "Demonstrates the developer inner loop on OpenShift using Dev Spaces one-click workspaces and Quarkus dev mode, including MTA positioning and Dev Spaces governance from the platform engineer persona."
+      - title: "CI/CD Pipeline"
+        overview: "Walks through an automated CI/CD pipeline triggered by a Git push: Tekton build, SonarQube code quality gates with AI-assisted fixes, and GitOps delivery to production using Argo CD."
+      - title: "Platform Operations"
+        overview: "Covers platform engineering concerns including Service Mesh mTLS and traffic policies, Kiali observability with fault injection, HPA autoscaling under load, and external secrets management with Vault."
+      - title: "Developer Hub"
+        overview: "Showcases Red Hat Developer Hub as a self-service portal: Developer Lightspeed AI assistant, software catalog exploration, and golden path template provisioning for new applications."
+      - title: "Secure Development"
+        overview: "Introduces secure development workflow with Dependency Analytics IDE scanning and a hardened build pipeline featuring ACS image scanning, SBOM generation, Tekton Chains signing, and Conforma policy validation."
+      - title: "Trusted Software Supply Chain"
+        overview: "Deep dive into the TPA SBOM dashboard for dependency analysis and vulnerability correlation, concluding with an OpenShift topology view that ties together the full application lifecycle."
+      - title: "AI-Enhanced Applications"
+        overview: "Implements LLM-powered email triage routing using Quarkus LangChain4j and deploys the AI-enhanced feature through the same secure CI/CD pipeline demonstrated in earlier modules."
     rcars_overlap_pct: null
     rcars_top_matches: []
     rejections: []

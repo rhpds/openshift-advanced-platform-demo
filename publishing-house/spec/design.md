@@ -97,4 +97,13 @@ Advanced
 
 ## Infrastructure Requirements
 
-TBD -- confirmed in infrastructure phase
+- **Cloud provider:** TBD — CNV has performance issues; AWS under consideration for both this lab and the original demo CI
+- **Cluster type:** Multinode
+- **OCP version:** 4.20 (minimum)
+- **Topology:** Per-student — each attendee gets a dedicated cluster
+- **Sizing:** TBD — should match the existing `published.ocp4-adv-app-platform-demo.prod` CI sizing
+- **Automation approach:** Both (Ansible + GitOps)
+- **AI/MaaS:** MaaS, open-source tier (qwen3-235b via LiteMaaS — external endpoint, no GPU nodes required)
+- **External services:** registry.devfile.io, LiteMaaS LLM endpoint
+- **AAP version:** N/A
+- **Non-GA products:** None (all products are GA)

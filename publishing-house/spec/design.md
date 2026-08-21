@@ -107,3 +107,9 @@ Advanced
 - **External services:** registry.devfile.io, LiteMaaS LLM endpoint
 - **AAP version:** N/A
 - **Non-GA products:** None (all products are GA)
+
+**IMPORTANT — Sync with upstream demo CI:**
+`published.ocp4-adv-app-platform-demo.prod` is actively maintained and has upcoming changes and additions. The RHDP team supporting Red Hat One must align with the demo owners (Markus Nagel, Evan Shortiss, James Falkner) on:
+
+1. The date a copy is made for the Red Hat One lab
+2. How changes to the original — both Showroom content and demo setup/configuration — can be synced with the Red Hat One copy, if possible

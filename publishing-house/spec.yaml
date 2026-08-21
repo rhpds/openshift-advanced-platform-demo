@@ -136,8 +136,33 @@ approval_checklist:
         overview: "Deep dive into the TPA SBOM dashboard for dependency analysis and vulnerability correlation, concluding with an OpenShift topology view that ties together the full application lifecycle."
       - title: "AI-Enhanced Applications"
         overview: "Implements LLM-powered email triage routing using Quarkus LangChain4j and deploys the AI-enhanced feature through the same secure CI/CD pipeline demonstrated in earlier modules."
-    rcars_overlap_pct: null
-    rcars_top_matches: []
+    rcars_overlap_pct: 100
+    rcars_top_matches:
+      - title: "OpenShift Advanced App Platform Demo"
+        ci_name: "published.ocp4-adv-app-platform-demo.prod"
+        url: "https://catalog.demo.redhat.com/catalog?item=published.ocp4-adv-app-platform-demo.prod"
+        relevance_score: 100
+        why_it_fits: "This is the exact demo CI being migrated. The lab is an intentional 1:1 copy for Red Hat One seller enablement — each attendee gets a dedicated instance to learn how to deliver this demo."
+      - title: "Service Enablement: App Platform Software Factory"
+        ci_name: "openshift-cnv.app-platform-factory-cnv.prod"
+        url: "https://catalog.demo.redhat.com/catalog?item=openshift-cnv.app-platform-factory-cnv.prod"
+        relevance_score: 77
+        why_it_fits: "Covers most of the same technologies through an advanced hands-on workshop but lacks ACS and Service Mesh, and is a multi-day format."
+        workloads:
+          - role: "ocp4_workload_authentication"
+            collection: "agnosticd.core_workloads"
+          - role: "ocp4_workload_gitops_bootstrap"
+            collection: "agnosticd.core_workloads"
+          - role: "ocp4_workload_openshift_gitops"
+            collection: "agnosticd.core_workloads"
+          - role: "ocp4_workload_showroom"
+            collection: "agnosticd.showroom"
+      - title: "OpenShift Dev Day Roadshow"
+        ci_name: "published.ocp-dev-days-rdshw.prod"
+        url: "https://catalog.demo.redhat.com/catalog?item=published.ocp-dev-days-rdshw.prod"
+        relevance_score: 74
+        why_it_fits: "Covers Developer Hub, Dev Spaces, Pipelines, and GitOps but at beginner level, missing Service Mesh, ACS, AMQ Streams, TAS, TPA, and AI/LLM."
+    catalog_gap: "Intentional 1:1 copy of published.ocp4-adv-app-platform-demo.prod for Red Hat One seller enablement. Each attendee gets a dedicated per-student instance to learn how to effectively deliver the existing demo. Overlap is by design."
     rejections: []
 
   infra:

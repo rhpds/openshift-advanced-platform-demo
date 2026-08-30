@@ -94,7 +94,35 @@ approval_checklist:
       deliver the OpenShift Advanced App Platform demo. Participants observe focused highlight walkthroughs
       of all three demo sections with talking points and objection handling, then run one demo module
       end-to-end independently in a live RHDP instance.
-    module_summaries: []
+    module_summaries:
+      - title: "Demo Narrative and Delivery Preparation"
+        overview: >-
+          Introduces the Parasol Insurance business narrative, audience-tailoring strategies,
+          environment access procedures, and pre-demo checklist. Participants leave with the
+          story framing and the environment knowledge needed to begin customer deliveries.
+      - title: "Section 1 Highlights: Foundational App Platform"
+        overview: >-
+          Instructor-led walkthrough of key moments in the developer inner loop (Dev Spaces,
+          MTA context), CI/CD pipeline security (SonarQube SAST failure, Roo Code AI fix),
+          Argo CD GitOps delivery, and platform operations (Kiali traffic graph, HPA autoscaling,
+          Vault external secrets) — with talking points and objection handling for each area.
+      - title: "Section 2 Highlights: Advanced Developer Services"
+        overview: >-
+          Instructor-led walkthrough of Developer Hub Lightspeed natural-language catalog queries,
+          self-service template provisioning, Dependency Analytics CVE detection, the secure Tekton
+          pipeline (ACS image scan, Syft SBOM, TAS keyless signing, Conforma attestation), and
+          TPA supply chain CVE-to-SBOM traceability — with supply chain objection handling.
+      - title: "Section 3 Highlights: Intelligent Applications"
+        overview: >-
+          Instructor-led walkthrough of OpenShift AI positioning, RHDH self-service provisioning
+          of the AI feature branch, LangChain4j Quarkus intelligent email routing application,
+          and structured objection handling for GPU requirements, model vendor lock-in, and
+          production readiness questions.
+      - title: "Hands-On Practice and Q&A"
+        overview: >-
+          Participants select one source demo module (1-7) and run it end-to-end in their own
+          RHDP instance, followed by structured peer debrief, instructor tips on timing and
+          recovery techniques, and open Q&A covering first-customer-delivery preparation.
     rcars_overlap_pct: null
     rcars_top_matches: []
     rejections:

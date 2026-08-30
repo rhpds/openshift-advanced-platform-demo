@@ -74,9 +74,11 @@ Intermediate
 
 ## Environment
 
-**Learner view:** The RHDP demo CI (`ocp4-adv-app-platform-demo`) is pre-provisioned by the event organizer before the session starts — one instance per participant plus one for the instructor. Provisioning typically takes 20–30 minutes, which is longer than the instructor-led walkthrough sections, so instances must be ordered in advance. During Modules 2–4, the instructor drives on a projected screen while participants observe. For Module 5, each participant accesses their own pre-provisioned instance to run one selected module end-to-end.
+**Two-Showroom approach:** This CI is the enablement Showroom (5 teaching modules). The original demo Showroom — the `ocp4-adv-app-platform-demo` catalog item — is a separate, unchanged CI that serves as both the reference environment and the hands-on practice environment. Participants use both: this Showroom for teaching content, the demo Showroom for the hands-on module.
 
-The environment includes a multi-node OpenShift cluster with all operators pre-installed (DevSpaces, Pipelines, GitOps, Service Mesh, Developer Hub, ACS, TAS, TPA, KEDA, External Secrets Operator), a GitLab instance, SonarQube, HashiCorp Vault, and an external LiteLLM endpoint for the AI module. Two Argo CD instances are configured: `rhdh-gitops` for application delivery and `openshift-gitops` for cluster bootstrap.
+**Learner view:** The RHDP demo CI (`ocp4-adv-app-platform-demo`) is pre-provisioned by the event organizer before the session starts — one instance per participant plus one for the instructor. Provisioning typically takes 20–30 minutes, which exceeds the time available during the instructor-led sections, so instances must be ordered in advance. During Modules 2–4, the instructor drives on a projected screen while participants observe and follow along in this enablement Showroom. For Module 5, each participant switches to their pre-provisioned demo instance to run one selected module end-to-end.
+
+The demo environment includes a multi-node OpenShift cluster with all operators pre-installed (DevSpaces, Pipelines, GitOps, Service Mesh, Developer Hub, ACS, TAS, TPA, KEDA, External Secrets Operator), a GitLab instance, SonarQube, HashiCorp Vault, and an external LiteLLM endpoint for the AI module. Two Argo CD instances are configured: `rhdh-gitops` for application delivery and `openshift-gitops` for cluster bootstrap.
 
 **Automation needed:** No — all instances are provisioned via the RHDP catalog before the session. The event organizer must order one instance per participant at least 30 minutes before the session starts.
 

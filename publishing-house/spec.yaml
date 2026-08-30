@@ -162,7 +162,7 @@ approval_checklist:
         Right now, it is 2.5 hours aligned to the actual demo. We shouldn't use all
         of the time with people in a physical room to just do the thing that they
         can already order via self-service.
-      resolved: false
+      resolved: true
       reviewer: nstephan@redhat.com
       timestamp: '2026-08-26T09:43:55.828490+00:00'
     - id: dd96d0dd-6933-4bfe-a7a7-a815edcda940
@@ -170,7 +170,7 @@ approval_checklist:
         should try to keep this at intermediate level. I think this should be advanced
         for customers, but it should be intermediate for anyone at Red Hat that is
         delivering it.
-      resolved: false
+      resolved: true
       reviewer: nstephan@redhat.com
       timestamp: '2026-08-26T09:43:55.828490+00:00'
   infra:

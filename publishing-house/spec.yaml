@@ -42,28 +42,32 @@ spec:
       duration_min: 45
       status: not_started
   environment:
-    platform: ''
-    topology: ''
+    platform: ocp
+    topology: per-student
     cloud_provider: cnv
     max_concurrent_users: null
-    ocp_version: ''
-    cluster_type: ''
-    control_plane_instance_count: null
-    control_plane_cpu: null
-    control_plane_ram_gb: null
-    worker_count: null
-    worker_cpu: null
-    worker_ram_gb: null
-    worker_disk_gb: null
+    ocp_version: '4.20'
+    cluster_type: multinode
+    control_plane_instance_count: 3
+    control_plane_cpu: 16
+    control_plane_ram_gb: 64
+    worker_count: 6
+    worker_cpu: 16
+    worker_ram_gb: 64
+    worker_disk_gb: 200
     vms_per_student: []
     aap_version: ''
-    ai_requirement: ''
-    ai_model_tier: ''
-    ai_model_name: ''
+    ai_requirement: maas
+    ai_model_tier: open-source
+    ai_model_name: qwen3-235b
     ai_justification: ''
     non_ga_products: []
     non_ga_access_plan: ''
-    external_services: []
+    external_services:
+      - litellm-prod-frontend.apps.maas.redhatworkshops.io
+      - registry.redhat.io
+      - quay.io
+      - registry.devfile.io
     gpu_nodes: 0
     gpu_type: ''
   duration_hours: 2
@@ -84,6 +88,10 @@ compliance:
 tracking:
   paused: false
   pause_reason: null
+  todos:
+    - id: right-sizing
+      text: "Performance test and right-size the cluster spec after initial delivery — enablement format may need less capacity than the full customer-facing demo."
+      status: open
 approval_checklist:
   content:
     prerequisites_verifiable: false
@@ -123,8 +131,31 @@ approval_checklist:
           Participants select one source demo module (1-7) and run it end-to-end in their own
           RHDP instance, followed by structured peer debrief, instructor tips on timing and
           recovery techniques, and open Q&A covering first-customer-delivery preparation.
-    rcars_overlap_pct: null
-    rcars_top_matches: []
+    rcars_overlap_pct: 93
+    rcars_top_matches:
+      - title: "Red Hat Trusted Application Pipeline"
+        ci_name: "enterprise.redhat-tap-demo.prod"
+        url: "https://catalog.demo.redhat.com/catalog?item=enterprise.redhat-tap-demo.prod"
+        relevance_score: 93
+        why_it_fits: "Covers the full RHDH + Pipelines + GitOps + ACS + TAS + TPA + OpenShift AI DevSecOps narrative, explicitly designed for SAs to present and deliver end-to-end."
+        workloads: []
+      - title: "Red Hat Advanced Developer Suite - Software Supply Chain Demo"
+        ci_name: "enterprise.redhat-ads-demo.prod"
+        url: "https://catalog.demo.redhat.com/catalog?item=enterprise.redhat-ads-demo.prod"
+        relevance_score: 84
+        why_it_fits: "Covers Developer Hub, Pipelines, GitOps, ACS, TAS, and TPA through an end-to-end supply chain narrative SAs can use to practice talking points."
+        workloads:
+          - role: "ocp4_workload_advanced_developer_suite"
+            collection: "rhpds.ads"
+      - title: "Service Enablement: App Platform Software Factory"
+        ci_name: "openshift-cnv.app-platform-factory-cnv.prod"
+        url: "https://catalog.demo.redhat.com/catalog?item=openshift-cnv.app-platform-factory-cnv.prod"
+        relevance_score: 82
+        why_it_fits: "Hands-on enablement lab covering Developer Hub, Pipelines, GitOps, TAS, and TPA end-to-end for the same SA audience."
+        workloads:
+          - role: "ocp4_workload_showroom"
+            collection: "agnosticd.showroom"
+    catalog_gap: "No existing catalog item teaches SAs how to deliver the Advanced App Platform demo specifically — with the Parasol Insurance narrative, all 7 modules, per-section talking points, and objection handling coaching. Closest items are either full hands-on labs where participants do the work themselves, or demos covering a subset of the stack without the instructor-led enablement layer."
     rejections:
     - id: 78385367-0744-4f08-aa4b-ee31a8ece517
       text: The design of this should be rewritten to be what will be done at RH1.

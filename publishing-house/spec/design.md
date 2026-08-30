@@ -74,20 +74,21 @@ Intermediate
 
 ## Environment
 
-**Learner view:** The RHDP demo CI (`ocp4-adv-app-platform-demo`) is pre-provisioned and accessible via catalog.demo.redhat.com. During instructor-led highlight walkthroughs (Modules 2–4), the instructor drives the demo on a projected screen while participants observe and take notes. For the hands-on practice module (Module 5), each participant accesses their own provisioned demo instance to run one selected module end-to-end.
+**Learner view:** The RHDP demo CI (`ocp4-adv-app-platform-demo`) is pre-provisioned by the event organizer before the session starts — one instance per participant plus one for the instructor. Provisioning typically takes 20–30 minutes, which is longer than the instructor-led walkthrough sections, so instances must be ordered in advance. During Modules 2–4, the instructor drives on a projected screen while participants observe. For Module 5, each participant accesses their own pre-provisioned instance to run one selected module end-to-end.
 
 The environment includes a multi-node OpenShift cluster with all operators pre-installed (DevSpaces, Pipelines, GitOps, Service Mesh, Developer Hub, ACS, TAS, TPA, KEDA, External Secrets Operator), a GitLab instance, SonarQube, HashiCorp Vault, and an external LiteLLM endpoint for the AI module. Two Argo CD instances are configured: `rhdh-gitops` for application delivery and `openshift-gitops` for cluster bootstrap.
 
-**Automation needed:** No — the demo environment is pre-provisioned by RHDP infrastructure. Participants provision their own instance via the catalog for Module 5.
+**Automation needed:** No — all instances are provisioned via the RHDP catalog before the session. The event organizer must order one instance per participant at least 30 minutes before the session starts.
 
 ## Infrastructure Requirements
 
-- **Cloud provider:** TBD — confirmed in infrastructure phase
-- **Cluster type:** TBD — confirmed in infrastructure phase
-- **OCP version:** TBD — confirmed in infrastructure phase
-- **Topology:** TBD — confirmed in infrastructure phase
-- **Sizing:** TBD — confirmed in infrastructure phase
-- **Automation approach:** TBD — confirmed in infrastructure phase
-- **AI/MaaS:** TBD — confirmed in infrastructure phase
-- **External services:** TBD — confirmed in infrastructure phase
-- **Non-GA products:** TBD — confirmed in infrastructure phase
+- **Cloud provider:** CNV
+- **Cluster type:** Multinode
+- **OCP version:** 4.20
+- **Topology:** Per-student
+- **Sizing:** 3 control plane nodes (16 vCPU, 64GB RAM); 6 worker nodes (16 vCPU, 64GB RAM, 200GB disk) — sized for the full operator stack (DevSpaces, Service Mesh, RHDH, ACS, TAS, TPA, Kafka, GitLab, SonarQube, Vault). TODO: right-size after initial delivery; the enablement format may require less capacity than the full customer-facing demo.
+- **Automation approach:** GitOps (Helm + ArgoCD) and Ansible
+- **AI/MaaS:** MaaS, open-source — LLM endpoint is external to the demo cluster, hosted on Red Hat Demo Platform (`litellm-prod-frontend.apps.maas.redhatworkshops.io`); no GPU on the demo cluster
+- **External services:** `litellm-prod-frontend.apps.maas.redhatworkshops.io` (LLM MaaS endpoint), `registry.redhat.io` (Red Hat container images), `quay.io` (pipeline image output), `registry.devfile.io` (DevSpaces devfile catalog), Red Hat advisory/vulnerability databases (Dependency Analytics, TPA CVE data)
+- **AAP version:** N/A
+- **Non-GA products:** None (all products are GA)

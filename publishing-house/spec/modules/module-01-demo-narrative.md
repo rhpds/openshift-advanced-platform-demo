@@ -31,7 +31,7 @@ This module introduces the Parasol Insurance customer narrative that anchors the
 2. Identify the three business value messages that map to each demo section: developer velocity and modernization (Section 1), security and supply chain compliance (Section 2), competitive differentiation through AI (Section 3).
 3. Explain the discovery question approach from 01-overview.adoc: open with "What is driving your modernization initiative?" to surface which section resonates most.
 4. Walk through the audience-tailoring decision tree: AppDev audiences → Sections 1+2; Platform/Ops audiences → Sections 1+3; Security → Section 2 only; Executive → narrative overview, skip deep dives.
-5. Log in to catalog.demo.redhat.com and provision the `ocp4-adv-app-platform-demo` catalog item; note the typical 20-30 minute provisioning time and plan accordingly.
+5. Explain the provisioning requirement: all participant instances must be pre-ordered in the RHDP catalog (catalog.demo.redhat.com) by the event organizer before the session starts — provisioning takes 20–30 minutes, which exceeds the time available during the instructor-led sections. Walk through how to order the `ocp4-adv-app-platform-demo` catalog item and confirm access details.
 6. Navigate the environment access guide from 02-details.adoc: OpenShift console URL, GitLab URL, per-user namespace assignments, DevSpaces browser URL, Argo CD endpoints.
 7. Walk through the pre-demo checklist from 02-details.adoc step by step: verify DevSpaces is running, GitLab webhooks are active, Argo CD apps are synced and healthy, LiteLLM endpoint is responding, Vault is unsealed.
 8. Review the Q&A scripting guidance from 01-overview.adoc for questions asked before the demo starts: "Why not just use GitHub Actions?", "We already have Tekton", "Is this on-prem only?", "Does this require OpenShift?".
@@ -45,6 +45,6 @@ This module introduces the Parasol Insurance customer narrative that anchors the
 
 ## Infrastructure Notes
 
-- Instructor should provision one instance for the projected walkthroughs (Modules 2–4); participants provision separately for Module 5
-- Allow at least 30 minutes between catalog order and the start of the enablement session to account for provisioning
+- Instructor provisions one instance for the projected walkthroughs (Modules 2–4); the event organizer must pre-provision one instance per participant before the session starts — do not ask participants to order their own during the session
+- Allow at least 30 minutes between catalog order and the start of the enablement session to account for provisioning time
 - LiteLLM endpoint (litellm-prod-frontend.apps.maas.redhatworkshops.io) requires outbound internet access; verify network policy if running at a customer site or air-gapped event

@@ -1,89 +1,93 @@
-# [Project Title]
-
-<!-- This file is the design document for your lab or demo. -->
-<!-- Fill in each section below, or run /rhdp-publishing-house to have the intake skill help. -->
-<!-- Sections marked with [brackets] are placeholders — replace with real content. -->
-<!-- The validation gate checks for all required sections before submission. -->
+# Delivering the Advanced App Platform Demo: An Enablement Lab for Red Hat SAs
 
 ## Overview
 
-[2-3 sentences on what this lab or demo is and why it exists. Then a direct description of what participants will do — specific enough that someone reading this section immediately understands the content without interpretation. No flowery language. Example: "Participants will deploy a 3-tier application on OpenShift, configure autoscaling, and troubleshoot a simulated pod failure."]
+This 2-hour instructor-led enablement session prepares Red Hat SAs and technical sellers to confidently deliver the OpenShift Advanced App Platform demo (ocp4-adv-app-platform-demo) to enterprise customers. Rather than re-running the full 2.5-hour demo, participants receive focused walkthroughs of the three demo sections — targeting key talking points, differentiation messages, and objection handling — followed by a self-selected hands-on practice segment where participants run one demo module end-to-end in the RHDP live demo CI environment. Participants leave with the narrative, the environment knowledge, and at least one complete delivery under their belt.
 
 ## Target Audience
 
-- **Role:** [Data scientists, platform engineers, developers, etc.]
-- **Experience level:** [Beginner, intermediate, or advanced]
-- **What they already know:** [Existing skills and knowledge]
-- **What they don't know:** [Skills this lab teaches]
+- **Role:** Red Hat Solution Architects, Technical Sales Specialists, Partner Solution Architects
+- **Experience level:** Intermediate
+- **What they already know:** OpenShift console navigation, basic Kubernetes concepts (pods, namespaces, deployments), Git fundamentals, familiarity with the RHDP demo catalog
+- **What they don't know:** The specific narrative arc, section sequencing, and objection handling for this demo; the integration points between DevSpaces, Pipelines, GitOps, Developer Hub, ACS, TAS, TPA, and the AI/LLM workflow; how to scope and customize the demo for a given customer context
 
 ## Prerequisites
 
-- [What the learner must know or have completed before starting]
-- [Can the lab validate these automatically? Yes/No — brief explanation]
+- Familiarity with OpenShift Container Platform concepts (console navigation, namespaces, basic workload management)
+- An active RHDP account (catalog.demo.redhat.com) with access to the `ocp4-adv-app-platform-demo` catalog item for the hands-on practice module
+- No deep expertise in any individual product is required; this lab assumes breadth over depth
 
-<!-- If no prerequisites, write "None" -->
+Note: Prerequisites cannot be auto-validated. Participants must confirm RHDP access before the session.
 
 ## Learning Objectives
 
-1. [Action verb] [specific, measurable outcome]
-2. [Action verb] [specific, measurable outcome]
-3. [Action verb] [specific, measurable outcome]
-
-<!-- Scale to duration: up to 3 objectives per 45 min of content. Start with action verbs: Configure, Deploy, Create, Implement, Troubleshoot, Monitor, Scale. Each should be testable. NOT: Understand, Learn, Know. -->
+1. Demonstrate the Parasol Insurance business narrative end-to-end, connecting each demo section to measurable customer business outcomes
+2. Analyze customer signals to configure the demo scope and module sequence for different audience personas and time constraints
+3. Explore the key talking points, differentiation messages, and objection responses for each of the three demo sections
+4. Verify the demo environment using the pre-demo checklist and troubleshoot common setup issues before a customer delivery
+5. Demonstrate one complete demo module end-to-end independently in the RHDP live demo CI environment
 
 ## Content Type
 
-[Lab (hands-on) or Demo (presenter-led)]
+Lab
 
 ## Products & Technologies
 
-- [Official Red Hat product name with version if relevant]
-- [Additional products/technologies]
+**Red Hat Products:**
+- Red Hat OpenShift Container Platform
+- Red Hat OpenShift Dev Spaces
+- Red Hat OpenShift Pipelines
+- Red Hat OpenShift GitOps
+- Red Hat OpenShift Service Mesh
+- Red Hat Developer Hub
+- Red Hat Advanced Cluster Security for Kubernetes
+- Red Hat Trusted Artifact Signer
+- Red Hat Trusted Profile Analyzer
+- Red Hat AMQ Streams
+- Red Hat build of Quarkus
+- Migration Toolkit for Applications
+- Red Hat OpenShift AI (external LiteLLM endpoint hosting)
 
-<!-- Use official names: "Red Hat OpenShift", not "OpenShift". List upstream projects separately. -->
+**Community / Third-Party (referenced in demo context):**
+- GitLab
+- SonarQube
+- HashiCorp Vault
+- External Secrets Operator
+- Kiali
+- Roo Code AI assistant
+- LiteLLM
 
 ## Module Map
 
 | Module | Title | Duration |
 |--------|-------|----------|
-| 1 | [Module title] | [XX min] |
-| 2 | [Module title] | [XX min] |
-| — | **Total hands-on** | **[X hours]** |
-| — | Intro / presentation | [~XX min] |
-| — | **Total lab** | **[~X hours]** |
-
-<!-- Each module 10-30 min. Total: lab 1-4 hours, demo 15-45 min. Modules should build on each other. -->
+| 1 | Demo Narrative and Delivery Preparation | 20 min |
+| 2 | Section 1 Highlights: Foundational App Platform | 20 min |
+| 3 | Section 2 Highlights: Advanced Developer Services | 20 min |
+| 4 | Section 3 Highlights: Intelligent Applications | 15 min |
+| 5 | Hands-On Practice and Q&A | 45 min |
+| — | **Total** | **~2 hours** |
 
 ## Difficulty Level
 
-[Beginner, Intermediate, or Advanced]
+Intermediate
 
 ## Environment
 
-**Learner view:** [What exists when the lab starts — pre-deployed resources, what participants see and interact with. Be specific about cluster details.]
+**Learner view:** The RHDP demo CI (`ocp4-adv-app-platform-demo`) is pre-provisioned and accessible via catalog.demo.redhat.com. During instructor-led highlight walkthroughs (Modules 2–4), the instructor drives the demo on a projected screen while participants observe and take notes. For the hands-on practice module (Module 5), each participant accesses their own provisioned demo instance to run one selected module end-to-end.
 
-**Automation needed:** [Yes/No]
+The environment includes a multi-node OpenShift cluster with all operators pre-installed (DevSpaces, Pipelines, GitOps, Service Mesh, Developer Hub, ACS, TAS, TPA, KEDA, External Secrets Operator), a GitLab instance, SonarQube, HashiCorp Vault, and an external LiteLLM endpoint for the AI module. Two Argo CD instances are configured: `rhdh-gitops` for application delivery and `openshift-gitops` for cluster bootstrap.
 
-[If yes, list what automation must provision — operators, per-user resources, sample apps, data sets.]
+**Automation needed:** No — the demo environment is pre-provisioned by RHDP infrastructure. Participants provision their own instance via the catalog for Module 5.
 
 ## Infrastructure Requirements
 
-- **Cloud provider:** [CNV (default), AWS, or Troshka (bare-metal/nested virt)]
-- **Cluster type:** [Multinode or SNO (Single Node OpenShift)]
-- **OCP version:** [e.g. 4.20 — minimum 4.20]
-- **Topology:** [Shared cluster, per-student, or CNV pool]
-- **Sizing:** [Node types and counts with resources — e.g., "3 control plane (16 CPU, 64GB RAM), 6 workers (8 CPU, 32GB RAM, 100GB disk)"]
-- **Automation approach:** [Ansible, GitOps (Helm + ArgoCD), or combo]
-- **AI/MaaS:** [None, MaaS (open-source model), MaaS (frontier model), or dedicated GPU — include justification if not "none"]
-- **External services:** [Named services — e.g., github.com, registry.access.redhat.com — or "None"]
-- **AAP version:** [e.g. 2.5 — only if AAP is in products; omit otherwise]
-- **Non-GA products:** [Product name + version, with access plan — or "None (all products are GA)"]
-
-<!-- Not all fields must be known at intake. "TBD, estimating ~X" is fine. -->
-
-## Assessment Strategy (Optional)
-
-<!-- Optional — skip this section for demos or classic labs without verification. -->
-<!-- Relevant for Zero-Touch labs with solve/validate buttons or labs with automated checks. -->
-
-[If applicable: how will we know the learner successfully completed each module? Per module: verification script, solve/validate button, visible result in the UI, or automated check.]
+- **Cloud provider:** TBD — confirmed in infrastructure phase
+- **Cluster type:** TBD — confirmed in infrastructure phase
+- **OCP version:** TBD — confirmed in infrastructure phase
+- **Topology:** TBD — confirmed in infrastructure phase
+- **Sizing:** TBD — confirmed in infrastructure phase
+- **Automation approach:** TBD — confirmed in infrastructure phase
+- **AI/MaaS:** TBD — confirmed in infrastructure phase
+- **External services:** TBD — confirmed in infrastructure phase
+- **Non-GA products:** TBD — confirmed in infrastructure phase

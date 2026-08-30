@@ -1,63 +1,73 @@
-# Publishing House — Project Spec
-# Lifecycle: intake → content_review → infra_review → jira_sync → development → ready → published
-# No secrets in this file. Tokens live in ~/.config/publishing-house/auth.json
-# Stage is managed by SonataFlow and cached in .ph-state — do not edit stage.current manually.
-# NOTE: This file is also in the template repo. The Scaffolder overlays project.* values.
-# TODO: Eliminate this copy — Scaffolder should pull from template repo directly.
-
 project:
-  slug: "openshift-advanced-platform-demo"
-  owner_email: "mnagel@redhat.com"
-  content_type: "lab"
-  deployment_mode: "rhdp_published"
-  initiative_key: "rh1_2027"
-  showroom_type: "classic"
-  intake_type: "migration"
-  automation_type: "both"
-  description: "An exact copy of the https://catalog.demo.redhat.com/catalog/babylon-catalog-prod?item=babylon-catalog-prod/published.ocp4-adv-app-platform-demo.prod demo CI. The goal of the lab is attendee enablement on this CI and how to effectively demo it."
-  # content_reviewer_email and infra_reviewer_email are assigned by the RHDP team — not set by the author
-  jira_ticket: ""
-  workflow_id: ""
-
+  slug: openshift-advanced-platform-demo
+  owner_email: mnagel@redhat.com
+  content_type: lab
+  deployment_mode: rhdp_published
+  initiative_key: rh1_2027
+  showroom_type: classic
+  intake_type: migration
+  automation_type: both
+  description: An exact copy of the https://catalog.demo.redhat.com/catalog/babylon-catalog-prod?item=babylon-catalog-prod/published.ocp4-adv-app-platform-demo.prod
+    demo CI. The goal of the lab is attendee enablement on this CI and how to effectively
+    demo it.
+  jira_ticket: RHDPCD-1123
+  workflow_id: e5992e4f-81cf-4201-854e-73b8e30dfd52
 spec:
-  title: ""
-  learning_objectives: []
-  modules: []              # [{id, title, duration_min}] — written by intake Phase 4; id is stable (e.g. module-01)
+  title: 'Delivering the Advanced App Platform Demo: An Enablement Lab for Red Hat SAs'
+  learning_objectives:
+    - Demonstrate the Parasol Insurance business narrative end-to-end, connecting each demo section to measurable customer business outcomes
+    - Analyze customer signals to configure the demo scope and module sequence for different audience personas and time constraints
+    - Explore the key talking points, differentiation messages, and objection responses for each of the three demo sections
+    - Verify the demo environment using the pre-demo checklist and troubleshoot common setup issues before a customer delivery
+    - Demonstrate one complete demo module end-to-end independently in the RHDP live demo CI environment
+  modules:
+    - id: module-01
+      title: "Demo Narrative and Delivery Preparation"
+      duration_min: 20
+      status: not_started
+    - id: module-02
+      title: "Section 1 Highlights: Foundational App Platform"
+      duration_min: 20
+      status: not_started
+    - id: module-03
+      title: "Section 2 Highlights: Advanced Developer Services"
+      duration_min: 20
+      status: not_started
+    - id: module-04
+      title: "Section 3 Highlights: Intelligent Applications"
+      duration_min: 15
+      status: not_started
+    - id: module-05
+      title: "Hands-On Practice and Q&A"
+      duration_min: 45
+      status: not_started
   environment:
-    platform: ""               # ocp | rhel-vms — determines which sizing fields apply
-    topology: ""               # shared-cluster | per-student | cnv-pool
-    cloud_provider: cnv        # cnv | aws | troshka — cnv is default
-    max_concurrent_users: null # required if topology = shared-cluster
-
-    # --- OCP-specific fields (only when platform = ocp) ---
-    ocp_version: ""                    # e.g. 4.20 — minimum 4.20; leave empty for rhel-vms
-    cluster_type: ""                   # sno | multinode — only for platform = ocp
-    control_plane_instance_count: null # 1 if sno, 3 if multinode
-    control_plane_cpu: null            # 32 if sno, 16 if multinode
-    control_plane_ram_gb: null         # 128 if sno, 64 if multinode
-    worker_count: null                 # number of OCP worker nodes
-    worker_cpu: null                   # vCPU per worker
-    worker_ram_gb: null                # RAM per worker in GB
-    worker_disk_gb: null               # disk per worker in GB
-
-    # --- VM-specific fields (only when platform = rhel-vms) ---
-    # Each entry: {role, count, cpu, ram_gb, disk_gb, os}
+    platform: ''
+    topology: ''
+    cloud_provider: cnv
+    max_concurrent_users: null
+    ocp_version: ''
+    cluster_type: ''
+    control_plane_instance_count: null
+    control_plane_cpu: null
+    control_plane_ram_gb: null
+    worker_count: null
+    worker_cpu: null
+    worker_ram_gb: null
+    worker_disk_gb: null
     vms_per_student: []
-
-    # --- Common fields (both platforms) ---
-    aap_version: ""                    # required if AAP in products
-    ai_requirement: ""                 # maas | gpu | none
-    ai_model_tier: ""                  # open-source | frontier (if ai_requirement = maas or gpu)
-    ai_model_name: ""                  # specific model e.g. granite-3.1-8b
-    ai_justification: ""               # required if ai_model_tier = frontier or ai_requirement = gpu
-    non_ga_products: []                # list of non-GA products/versions
-    non_ga_access_plan: ""             # how access is provided for non-GA products
-    external_services: []              # named external service dependencies e.g. [github.com]
-    gpu_nodes: 0                       # number of GPU nodes (0 = none)
-    gpu_type: ""                       # e.g. NVIDIA A100 40GB (required if gpu_nodes > 0)
-  duration_hours: null
-  audience: ""               # beginner | intermediate | advanced
-
+    aap_version: ''
+    ai_requirement: ''
+    ai_model_tier: ''
+    ai_model_name: ''
+    ai_justification: ''
+    non_ga_products: []
+    non_ga_access_plan: ''
+    external_services: []
+    gpu_nodes: 0
+    gpu_type: ''
+  duration_hours: 2
+  audience: intermediate
 development:
   automation:
     gitops:
@@ -68,32 +78,46 @@ development:
     status: not_started
   healthCheck:
     status: not_started
-
 compliance:
   last_hard_check: null
   hard_result: null
-
 tracking:
   paused: false
   pause_reason: null
-
-# Approval checklist — filled collaboratively by author + skill + system + reviewers
 approval_checklist:
-
   content:
-    prerequisites_verifiable: null
-    assessment_strategy: ""
-    catalog_gap: ""
-    design_overview: ""
+    prerequisites_verifiable: false
+    assessment_strategy: ''
+    catalog_gap: ''
+    design_overview: >-
+      A 2-hour instructor-led enablement session for Red Hat SAs and technical sellers to learn how to
+      deliver the OpenShift Advanced App Platform demo. Participants observe focused highlight walkthroughs
+      of all three demo sections with talking points and objection handling, then run one demo module
+      end-to-end independently in a live RHDP instance.
     module_summaries: []
     rcars_overlap_pct: null
     rcars_top_matches: []
-    rejections: []
-
+    rejections:
+    - id: 78385367-0744-4f08-aa4b-ee31a8ece517
+      text: The design of this should be rewritten to be what will be done at RH1.
+        Right now, it is 2.5 hours aligned to the actual demo. We shouldn't use all
+        of the time with people in a physical room to just do the thing that they
+        can already order via self-service.
+      resolved: false
+      reviewer: nstephan@redhat.com
+      timestamp: '2026-08-26T09:43:55.828490+00:00'
+    - id: dd96d0dd-6933-4bfe-a7a7-a815edcda940
+      text: I know the title is the "Advanced App Platform" demo, but I think you
+        should try to keep this at intermediate level. I think this should be advanced
+        for customers, but it should be intermediate for anyone at Red Hat that is
+        delivering it.
+      resolved: false
+      reviewer: nstephan@redhat.com
+      timestamp: '2026-08-26T09:43:55.828490+00:00'
   infra:
     peak_environments: null
-    cost_per_run_est: ""
-    provisioning_time_est: ""
-    agnosticv_base_ci: ""
-    approved_by: ""
+    cost_per_run_est: ''
+    provisioning_time_est: ''
+    agnosticv_base_ci: ''
+    approved_by: ''
     rejections: []

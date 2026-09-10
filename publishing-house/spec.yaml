@@ -7,45 +7,50 @@ project:
   showroom_type: classic
   intake_type: migration
   automation_type: both
-  description: An exact copy of the https://catalog.demo.redhat.com/catalog/babylon-catalog-prod?item=babylon-catalog-prod/published.ocp4-adv-app-platform-demo.prod
-    demo CI. The goal of the lab is attendee enablement on this CI and how to effectively
-    demo it.
+  description: >-
+    A 2-hour instructor-led enablement session for Red Hat SAs and technical sellers
+    to learn how to deliver the OpenShift Advanced App Platform demo. The session
+    runs in a group format: 100 attendees break into 20 groups of 5. Each group
+    receives one pre-provisioned RHDP demo instance (ocp4-adv-app-platform-demo);
+    one group member drives at any time while the others observe. The instructor
+    walks through the full demo at the front of the room and each group's driver
+    follows along live. Participants leave ready to deliver the demo to customers.
   jira_ticket: RHDPCD-1123
   workflow_id: e5992e4f-81cf-4201-854e-73b8e30dfd52
 spec:
   title: 'Delivering the Advanced App Platform Demo: An Enablement Lab for Red Hat SAs'
   learning_objectives:
-    - Demonstrate the Parasol Insurance business narrative end-to-end, connecting each demo section to measurable customer business outcomes
-    - Analyze customer signals to configure the demo scope and module sequence for different audience personas and time constraints
-    - Explore the key talking points, differentiation messages, and objection responses for each of the three demo sections
-    - Verify the demo environment using the pre-demo checklist and troubleshoot common setup issues before a customer delivery
-    - Demonstrate one complete demo module end-to-end independently in the RHDP live demo CI environment
+    - Describe the Parasol Insurance business narrative and connect each demo section to measurable customer business outcomes
+    - Follow along with the instructor through all three demo sections in a shared live RHDP environment, building familiarity with the navigation flow and key talking points
+    - Recall the differentiation messages and objection responses for each of the three demo sections
+    - Identify which sections to prioritize given different customer contexts and time constraints
+    - Practice the full demo independently using the RHDP live environment after the session
   modules:
     - id: module-01
-      title: "Demo Narrative and Delivery Preparation"
-      duration_min: 20
-      status: not_started
-    - id: module-02
-      title: "Section 1 Highlights: Foundational App Platform"
-      duration_min: 20
-      status: not_started
-    - id: module-03
-      title: "Section 2 Highlights: Advanced Developer Services"
-      duration_min: 20
-      status: not_started
-    - id: module-04
-      title: "Section 3 Highlights: Intelligent Applications"
+      title: "Demo Overview: Story, Structure, and Customer Message"
       duration_min: 15
       status: not_started
+    - id: module-02
+      title: "Group Formation and Instance Setup"
+      duration_min: 10
+      status: not_started
+    - id: module-03
+      title: "Section 1 Live Walkthrough: Foundational App Platform"
+      duration_min: 30
+      status: not_started
+    - id: module-04
+      title: "Section 2 Live Walkthrough: Advanced Developer Services"
+      duration_min: 30
+      status: not_started
     - id: module-05
-      title: "Hands-On Practice and Q&A"
-      duration_min: 45
+      title: "Section 3 Live Walkthrough: Intelligent Applications"
+      duration_min: 25
       status: not_started
   environment:
     platform: ocp
     topology: per-student
     cloud_provider: cnv
-    max_concurrent_users: null
+    max_concurrent_users: 20
     ocp_version: '4.20'
     cluster_type: multinode
     control_plane_instance_count: 3
@@ -95,42 +100,51 @@ tracking:
 approval_checklist:
   content:
     prerequisites_verifiable: false
-    assessment_strategy: ''
+    assessment_strategy: >-
+      No formal assessment. Formative only: real-time Q&A during the session surfaces
+      comprehension gaps; post-session, participants self-assess readiness by completing
+      at least one independent practice run of their target section(s) using their own
+      RHDP instance before a first customer delivery.
     catalog_gap: ''
     design_overview: >-
       A 2-hour instructor-led enablement session for Red Hat SAs and technical sellers to learn how to
-      deliver the OpenShift Advanced App Platform demo. Participants observe focused highlight walkthroughs
-      of all three demo sections with talking points and objection handling, then run one demo module
-      end-to-end independently in a live RHDP instance.
+      deliver the OpenShift Advanced App Platform demo. The session opens with a 15-minute demo overview
+      covering the Parasol Insurance narrative, section structure, and core customer messages, followed
+      by 10 minutes of group formation where 100 attendees break into 20 groups of 5, each receiving a
+      shared pre-provisioned RHDP instance. The remainder of the session is the instructor delivering the
+      full demo live while each group's driver follows along. Q&A is embedded at the end of each section.
+      Reaching Section 2 is the minimum viable outcome; Section 3 is time-permitting, with SAs encouraged
+      to continue independently after the event.
     module_summaries:
-      - title: "Demo Narrative and Delivery Preparation"
+      - title: "Demo Overview: Story, Structure, and Customer Message"
         overview: >-
-          Introduces the Parasol Insurance business narrative, audience-tailoring strategies,
-          environment access procedures, and pre-demo checklist. Participants leave with the
-          story framing and the environment knowledge needed to begin customer deliveries.
-      - title: "Section 1 Highlights: Foundational App Platform"
+          Instructor frames the Parasol Insurance business narrative, explains the three-section
+          structure, and highlights the core customer messages and differentiation angles for each
+          section. Participants leave the overview knowing what the demo proves to a customer and
+          how the sections connect.
+      - title: "Group Formation and Instance Setup"
         overview: >-
-          Instructor-led walkthrough of key moments in the developer inner loop (Dev Spaces,
-          MTA context), CI/CD pipeline security (SonarQube SAST failure, Roo Code AI fix),
-          Argo CD GitOps delivery, and platform operations (Kiali traffic graph, HPA autoscaling,
-          Vault external secrets) — with talking points and objection handling for each area.
-      - title: "Section 2 Highlights: Advanced Developer Services"
+          Attendees self-organise into groups of 5. Each group receives a single set of RHDP
+          credentials for their pre-provisioned demo instance, nominates a starting driver, and
+          verifies login access. Sets the expectation that the driver role can rotate at any point.
+      - title: "Section 1 Live Walkthrough: Foundational App Platform"
         overview: >-
-          Instructor-led walkthrough of Developer Hub Lightspeed natural-language catalog queries,
-          self-service template provisioning, Dependency Analytics CVE detection, the secure Tekton
-          pipeline (ACS image scan, Syft SBOM, TAS keyless signing, Conforma attestation), and
-          TPA supply chain CVE-to-SBOM traceability — with supply chain objection handling.
-      - title: "Section 3 Highlights: Intelligent Applications"
+          Instructor delivers Section 1 live while each group's driver follows along in their
+          shared RHDP instance. Covers the developer inner loop (Dev Spaces, MTA), CI/CD pipeline
+          security (SonarQube SAST failure, Roo Code AI fix), Argo CD GitOps delivery, and platform
+          operations (Kiali, HPA, Vault external secrets). Q&A at the end.
+      - title: "Section 2 Live Walkthrough: Advanced Developer Services"
         overview: >-
-          Instructor-led walkthrough of OpenShift AI positioning, RHDH self-service provisioning
-          of the AI feature branch, LangChain4j Quarkus intelligent email routing application,
-          and structured objection handling for GPU requirements, model vendor lock-in, and
-          production readiness questions.
-      - title: "Hands-On Practice and Q&A"
+          Instructor delivers Section 2 live while groups follow along. Covers Developer Hub
+          Lightspeed, self-service template provisioning, Dependency Analytics CVE detection, the
+          secure Tekton pipeline (ACS, Syft SBOM, TAS, Conforma), and TPA supply chain traceability.
+          Q&A at the end. Minimum viable endpoint if the session runs short on time.
+      - title: "Section 3 Live Walkthrough: Intelligent Applications"
         overview: >-
-          Participants select one source demo module (1-7) and run it end-to-end in their own
-          RHDP instance, followed by structured peer debrief, instructor tips on timing and
-          recovery techniques, and open Q&A covering first-customer-delivery preparation.
+          Instructor delivers Section 3 live while groups follow along. Covers OpenShift AI
+          positioning, RHDH self-service AI provisioning, and the LangChain4j intelligent email
+          routing application. Q&A at the end. Time-permitting — SAs who do not reach this section
+          are encouraged to practice it independently using their own RHDP instance after the event.
     rcars_overlap_pct: 93
     rcars_top_matches:
       - title: "Red Hat Trusted Application Pipeline"
@@ -179,4 +193,26 @@ approval_checklist:
     provisioning_time_est: ''
     agnosticv_base_ci: ''
     approved_by: ''
-    rejections: []
+    rejections:
+      - id: infra-rejection-rh1-2026-09-10
+        text: >-
+          Please reconsider the design of this session. In its current form, it puts too much stress
+          on the infrastructure and may affect other sessions at the event. I understand that the idea
+          of this lab is to show how to deliver the existing demo. However, the session room is for 100
+          attendees and running 100 demos concurrently puts a lot of stress on the infrastructure.
+          According to my estimation we will need to provide 57TB of RAM or about 15K cpu core to run
+          one session. It is too much and may affect other sessions during the event. I am going to
+          reject this request and ask you to reconsider the approach. It would be better to show how
+          to run select modules of the original demo in the multi-user environment. It will be closer
+          to real use case when Developer Hub is used in the multiuser mode and all corresponding
+          checks and pipelines share resources of the same cluster. We can deploy a bigger cluster and,
+          if necessary, a few clusters per a group of attendees.
+        resolved: true
+        reviewer: ''
+        timestamp: '2026-09-10T00:00:00+00:00'
+        resolution: >-
+          Redesigned as a group format: 100 attendees in 20 groups of 5. Each group shares one
+          pre-provisioned RHDP instance and one set of credentials. One group member drives at any
+          time; others observe. Reduces concurrent instances from 100 to 20 — approximately 80%
+          reduction in peak infrastructure load (from ~57TB RAM / ~15K cores to ~11.5TB RAM /
+          ~2.9K cores).

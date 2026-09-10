@@ -16,6 +16,16 @@ The instructor delivers Section 2 of the Advanced App Platform demo live. Each g
 - Identify the peak moments in Section 2 and the supply chain security narrative they carry
 - Recall at least two objection responses relevant to Developer Hub and software supply chain security
 
+## Lab Structure
+
+| Section | Title | Duration |
+|---------|-------|----------|
+| 1 | Developer Hub — Lightspeed and self-service provisioning | 7 min |
+| 2 | Dependency Analytics CVE detection | 3 min |
+| 3 | Secure Tekton pipeline — ACS, SBOM, TAS, Conforma | 12 min |
+| 4 | TPA supply chain traceability | 3 min |
+| 5 | Q&A | ~5 min |
+
 ## Demo Flow (Section 2)
 
 The instructor follows the standard demo script for Section 2. Key beats, in order:
@@ -52,6 +62,12 @@ Hold Q&A at the end of Section 2. Common questions:
 - *"How does keyless signing work without a private key?"* — It uses short-lived certificates issued by Fulcio (a certificate authority) tied to the CI identity (OIDC). The transparency log (Rekor) provides auditability.
 - *"What's the difference between ACS and Dependency Analytics?"* — Dependency Analytics catches known CVEs in open-source dependencies at development time, in the IDE. ACS scans the full built container image at pipeline time — a different layer, catching a different class of issues.
 - *"Is TPA a replacement for a full SBOM management platform?"* — For many customers, yes. For organisations with existing tools (e.g. Black Duck, Snyk), TPA can complement via API integration.
+
+## Key Takeaways
+
+- TPA supply chain traceability (beat 8) is the peak moment of Section 2 — the most visually striking and the most frequently cited by SAs after a customer delivery
+- If time is short, compress beat 1 (Lightspeed) and go straight to self-service provisioning; beats 4–8 are the supply chain narrative core
+- Stopping here is a complete session — SAs leave with the most differentiated supply chain story in the Red Hat portfolio
 
 ## Instructor Notes
 

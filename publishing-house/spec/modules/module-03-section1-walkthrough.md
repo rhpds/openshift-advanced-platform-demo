@@ -16,6 +16,16 @@ The instructor delivers Section 1 of the Advanced App Platform demo live, at the
 - Identify the peak moments in Section 1 and the customer message each one carries
 - Recall at least two objection responses relevant to the Foundational App Platform narrative
 
+## Lab Structure
+
+| Section | Title | Duration |
+|---------|-------|----------|
+| 1 | Developer inner loop — Dev Spaces and MTA context | 5 min |
+| 2 | CI/CD pipeline — broken build and Roo Code AI fix | 7 min |
+| 3 | Argo CD GitOps delivery | 5 min |
+| 4 | Platform operations — Kiali, HPA, Vault external secrets | 8 min |
+| 5 | Q&A | ~5 min |
+
 ## Demo Flow (Section 1)
 
 The instructor follows the standard demo script for the `ocp4-adv-app-platform-demo` Section 1. Key beats, in order:
@@ -52,6 +62,12 @@ Hold Q&A at the end of Section 1. Common questions at this point:
 - *"Does this require Service Mesh for every application?"* — No. Kiali and the traffic graph are valuable for microservices-heavy workloads. Single-service applications don't need it.
 - *"Can Argo CD manage non-OCP targets?"* — Yes, it is cluster-agnostic. In this demo it targets OCP, but it can sync to any Kubernetes-compatible cluster.
 - *"Is Vault required, or can we use OCP secrets?"* — OCP native secrets work. Vault is shown because it is the most common enterprise secrets management tool SAs encounter in the field.
+
+## Key Takeaways
+
+- The peak moments are the Roo Code AI fix and the Argo CD sync — every step before is setup, every step after is reinforcement
+- Section 1 can be compressed to ~15 minutes by skipping MTA context and HPA; the narrative still holds
+- Drivers should follow one step behind the instructor — observers learn by watching both screens simultaneously
 
 ## Instructor Notes
 

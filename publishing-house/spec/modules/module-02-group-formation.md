@@ -15,7 +15,15 @@ A brief logistics module. Attendees self-organise into groups of 5, receive shar
 - Access the shared RHDP demo instance as a group using the provided credentials
 - Confirm the instance is healthy and ready before the live walkthrough begins
 
-## Steps
+## Lab Structure
+
+| Section | Title | Duration |
+|---------|-------|----------|
+| 1 | Group self-organisation and credential distribution | 3 min |
+| 2 | Driver nomination and instance login verification | 5 min |
+| 3 | Show-of-hands check and access issue resolution | 2 min |
+
+## Detailed Steps
 
 1. Instructor announces the group size (max 5 per group) and asks attendees to self-organise. Groups can form naturally with neighbours — there is no assignment logic.
 2. Instructor or event staff distribute group credentials (one printed or shared sheet per group). Each sheet contains:
@@ -26,6 +34,12 @@ A brief logistics module. Attendees self-organise into groups of 5, receive shar
 4. Driver opens the OpenShift console and confirms login. Group members observe on the driver's screen (laptop screen share to a group monitor, or simply gathering around one laptop).
 5. Driver confirms GitLab login.
 6. Instructor does a quick show-of-hands: "Who is not logged in yet?" — resolves any access issues before moving on.
+
+## Key Takeaways
+
+- Getting credentials and logistics sorted quickly is more important than a perfect group formation — proceed on time even if one or two groups are still sorting themselves out
+- The driver rotation expectation is key to set early: there is no rule about when to rotate; the point is that every group member knows it is an option
+- If an instance fails to provision, joining a neighbouring group is a valid fallback, not a failure
 
 ## Instructor Notes
 

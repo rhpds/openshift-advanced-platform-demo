@@ -16,6 +16,16 @@ The instructor delivers Section 3 of the Advanced App Platform demo live, time p
 - Explain the OpenShift AI positioning and how it connects to the Parasol narrative
 - Recall at least two objection responses for AI-related customer concerns (GPU requirements, model lock-in, production readiness)
 
+## Lab Structure
+
+| Section | Title | Duration |
+|---------|-------|----------|
+| 1 | OpenShift AI positioning and MaaS endpoint | 5 min |
+| 2 | RHDH self-service AI feature provisioning | 5 min |
+| 3 | LangChain4j intelligent email routing application | 8 min |
+| 4 | Objection handling — GPU, lock-in, production readiness | 4 min |
+| 5 | Q&A | ~3 min |
+
 ## Demo Flow (Section 3)
 
 The instructor follows the standard demo script for Section 3. Key beats, in order:
@@ -45,6 +55,12 @@ Hold Q&A at the end of Section 3 (or as the final Q&A of the session if this is 
 - *"What models are supported?"* — Any model with an OpenAI-compatible API endpoint works with LiteLLM. In the RHDP demo, Qwen3-235B is used. Customers can bring their own models.
 - *"How does this compare to OpenAI or Azure OpenAI?"* — This is on-platform, data stays in your cluster (or your cloud region), and the model is open-source. For regulated industries, that matters. For others, it can run alongside existing cloud AI subscriptions.
 - *"Can we show this with a customer's own data?"* — The demo is pre-configured with Parasol data. For a custom PoC, the LiteLLM endpoint and the Quarkus application can be reconfigured. That is a PoC engagement, not a demo scope.
+
+## Key Takeaways
+
+- The email routing application and the AI objection handling are the must-deliver moments — compress or skip beats 1–3 if time is short
+- Section 3 is the most commonly skipped in time-constrained customer deliveries; knowing how to position the skip gracefully is itself a delivery skill
+- Post-session independent practice is the expected path for SAs who did not reach Section 3 during the event — the Showroom content is the guide
 
 ## Instructor Notes
 

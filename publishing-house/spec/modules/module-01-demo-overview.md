@@ -16,7 +16,7 @@ The session opens with the instructor framing the demo from the customer's persp
 - Identify the core customer message and primary differentiation angle for each of the three demo sections
 - Explain how the three sections connect into a single coherent story for an enterprise buyer
 
-## Content Structure
+## Lab Structure
 
 | Section | Title | Duration |
 |---------|-------|----------|

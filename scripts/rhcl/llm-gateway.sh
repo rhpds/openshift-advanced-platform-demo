@@ -23,8 +23,8 @@ GWNS=parasol-gateway
 # provider URL + key come from a namespace that still points at the provider directly. Never use
 # a namespace switched by llm-switch-app.sh: its base_url is the gateway itself (a loop).
 SRC_NS=parasol-insurance-prod
-TEAM=team-claims        # the application's team (its own 1.5k tokens/min counter)
-DEMO=team-demo          # key used on stage to exhaust the budget without touching the app
+TEAM=team-claims        # the application's team: 20k tokens/min
+DEMO=team-demo          # key used on stage: 1.5k tokens/min, exhausted in a few calls
 KEYNS=kuadrant-system                            # Authorino's namespace: only cluster admins can write here
 if [ "${1:-}" = "delete" ]; then
   oc delete tokenratelimitpolicy/llm authpolicy/llm httproute/llm -n $GWNS --ignore-not-found
@@ -188,12 +188,22 @@ spec:
     kind: HTTPRoute
     name: llm
   limits:
-    # one budget per identity (auth.identity.userid). The application's team and the stage key
-    # have separate counters, so the burst on stage never throttles the application.
-    per-team:
+    # every team gets a working budget; the stage key gets a small one so the 429 shows up
+    # within a handful of calls. Counters per identity, so the demo never throttles the app.
+    teams:
+      rates:
+        - limit: 20000
+          window: 1m
+      when:
+        - predicate: auth.identity.userid != "$DEMO"
+      counters:
+        - expression: auth.identity.userid
+    demo:
       rates:
         - limit: 1500
           window: 1m
+      when:
+        - predicate: auth.identity.userid == "$DEMO"
       counters:
         - expression: auth.identity.userid
 EOF

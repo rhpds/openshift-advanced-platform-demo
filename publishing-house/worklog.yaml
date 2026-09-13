@@ -203,6 +203,9 @@ entries:
       programming limits if a route without sectionName can pair with the internal llm
       listener; pin parentRefs.sectionName; (6) Envoy restarts on policy reloads; the gateway
       runs 2 replicas and tests wait for stability; (7) LLM completions need HTTPRoute
-      timeouts (120s). Verified at the end: API 401/200/429 for partner1 and for the portal
-      key, LLM 401/200 and 429 after ~1500 tokens, application classifying through the gateway.
+      timeouts (120s); (8) two token budgets in one TokenRateLimitPolicy via `when`
+      predicates (teams 20k/min, stage key team-demo 1.5k/min) work once (5) is fixed.
+      Verified at the end: API 401/200/429 for partner1 and for the portal key, LLM 401/200
+      and 429 after ~1500 tokens on the stage key, application classifying through the gateway
+      on its own budget.
 

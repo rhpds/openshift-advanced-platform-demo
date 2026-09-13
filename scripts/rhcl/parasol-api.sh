@@ -13,7 +13,7 @@ D=$(oc get ingresses.config cluster -o jsonpath='{.spec.domain}')
 HOST="parasol-api-${NS}.${D}"
 
 if [ "${1:-}" = "delete" ]; then
-  oc delete ratelimitpolicy parasol-api authpolicy parasol-api httproute parasol-api -n $NS --ignore-not-found
+  oc delete ratelimitpolicy/parasol-api authpolicy/parasol-api httproute/parasol-api -n $NS --ignore-not-found
   oc delete secret parasol-api-key-partner1 -n $NS --ignore-not-found
   oc delete route parasol-api -n $GWNS --ignore-not-found
   echo "removed the parasol-api HTTPRoute, policies, API key and Route"

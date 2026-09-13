@@ -11,6 +11,11 @@
 #   - ConfigMap rbac-policy: Kuadrant roles + plugin permissions (existing demo policy kept)
 #   - Backstage CR developer-hub: mount rbac-policy at /opt/app-root/etc
 # The RHDH operator restarts Developer Hub automatically (npm install takes ~3 min).
+#
+# Changing rbac-policy later: the operator mounts the CSV with subPath, so the running pod
+# never sees ConfigMap updates (policyFileReload cannot help). After editing the ConfigMap run
+#   oc rollout restart deployment/backstage-developer-hub -n rhdh
+# db-pool.sh must be run once after this script (PostgreSQL connection limit).
 set -euo pipefail
 cd "$(dirname "$0")"
 NS=rhdh

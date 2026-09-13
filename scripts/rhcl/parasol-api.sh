@@ -86,6 +86,9 @@ spec:
           selector:
             matchLabels:
               app: parasol-api
+          # Authorino runs in kuadrant-system; without this it only looks for
+          # Secrets there and every key is rejected with 401
+          allNamespaces: true
         credentials:
           authorizationHeader:
             prefix: APIKEY
@@ -130,7 +133,13 @@ oc get httproute parasol-api -n $NS -o custom-columns='HTTPROUTE:.metadata.name,
 oc get authpolicy,ratelimitpolicy parasol-api -n $NS -o custom-columns='KIND:.kind,ACCEPTED:.status.conditions[?(@.type=="Accepted")].status,ENFORCED:.status.conditions[?(@.type=="Enforced")].status,MSG:.status.conditions[?(@.type=="Enforced")].message'
 
 KEY=$(oc get secret parasol-api-key-partner1 -n $NS -o jsonpath='{.data.api_key}' | base64 -d)
-sleep 5
+# the gateway's Envoy reloads to load the Kuadrant wasm filter; 502/503 until it is done
+echo "waiting for the gateway to reload with the policies..."
+for i in $(seq 1 24); do
+  c=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 10 "https://$HOST/api/claims" || true)
+  [ "$c" = "401" ] && break
+  sleep 5
+done
 echo "== tests against https://$HOST/api/claims"
 printf '   without key   -> HTTP %s (expected 401)\n' "$(curl -sk -o /dev/null -w '%{http_code}' --max-time 15 "https://$HOST/api/claims")"
 printf '   with key      -> HTTP %s (expected 200)\n' "$(curl -sk -o /dev/null -w '%{http_code}' --max-time 15 -H "Authorization: APIKEY $KEY" "https://$HOST/api/claims")"

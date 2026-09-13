@@ -8,12 +8,16 @@
 #
 # Prereq: scripts/rhcl/parasol-api.sh (HTTPRoute parasol-api + policies) and the Kuadrant
 # Developer Hub plugins (scripts/rhdh-kuadrant/apply.sh) for the portal side.
+#
+# Naming: the plugin's catalog provider turns every published APIProduct into a catalog
+# entity of kind API named after the CR. The demo already registers api:default/
+# parasol-insurance-api from rhdh-templates, so the product gets its own name.
 set -euo pipefail
 NS=parasol-insurance-prod
 D=$(oc get ingresses.config cluster -o jsonpath='{.spec.domain}')
 
 if [ "${1:-}" = "delete" ]; then
-  oc delete apiproduct/parasol-insurance-api planpolicy/parasol-api-plans -n $NS --ignore-not-found
+  oc delete apiproduct/parasol-claims-api apiproduct/parasol-insurance-api planpolicy/parasol-api-plans -n $NS --ignore-not-found
   echo "removed the API Product and the PlanPolicy"
   exit 0
 fi
@@ -51,7 +55,7 @@ spec:
 apiVersion: devportal.kuadrant.io/v1alpha1
 kind: APIProduct
 metadata:
-  name: parasol-insurance-api
+  name: parasol-claims-api
   namespace: $NS
   annotations:
     backstage.io/owner: group:default/devteam1
@@ -82,5 +86,5 @@ EOF
 sleep 10
 echo "== status"
 oc get planpolicy parasol-api-plans -n $NS -o custom-columns='PLANPOLICY:.metadata.name,ACCEPTED:.status.conditions[?(@.type=="Accepted")].status,ENFORCED:.status.conditions[?(@.type=="Enforced")].status'
-oc get apiproduct parasol-insurance-api -n $NS -o custom-columns='APIPRODUCT:.metadata.name,PUBLISH:.spec.publishStatus,APPROVAL:.spec.approvalMode,ROUTE:.spec.targetRef.name'
-echo "Developer Hub: Connectivity Link -> API Products lists it within a minute (catalog refresh)."
+oc get apiproduct parasol-claims-api -n $NS -o custom-columns='APIPRODUCT:.metadata.name,PUBLISH:.spec.publishStatus,APPROVAL:.spec.approvalMode,ROUTE:.spec.targetRef.name'
+echo "Developer Hub: Connectivity Link -> API Products lists it; the catalog gets api:default/parasol-claims-api within a minute."

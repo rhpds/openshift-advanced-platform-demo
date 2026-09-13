@@ -123,3 +123,37 @@ entries:
       Kuadrant permissions for api-admin (added). Still manual: running the template and a
       Lightspeed conversation as dev1.
 
+  - id: "2026-09-13-009"
+    timestamp: "2026-09-13T20:05:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-13T20:05:00Z"
+    resolved_by: "sandrotanaka"
+    type: note
+    content: >-
+      Closed the four follow-ups of the RHCL work. (1) Module 3 Part 1b screenshots taken
+      headlessly from the console as pe1 (Gateways, HTTPRoute, policy topology, policies).
+      (2) post-provision.sh gained WITH_RHCL=1 / WITH_RHDH_PLUGINS=1 and fetches the sibling
+      scripts when piped from curl. (3) api-product.sh publishes the claims API as a
+      Connectivity Link API Product (parasol-claims-api; the CR name becomes an API entity,
+      so it must not collide with the existing parasol-insurance-api) with a gold/silver/
+      bronze PlanPolicy; visible in Developer Hub API Products and in the catalog.
+      (4) Phase 2 spike llm-gateway.sh works end to end: external MaaS behind the gateway via
+      ServiceEntry + DestinationRule (TLS origination) + HTTPRoute with Hostname backend,
+      platform key validated by AuthPolicy, provider key set by a RequestHeaderModifier on
+      the route (Authorino header injection appends and the provider rejects it), and a
+      TokenRateLimitPolicy of 1500 tokens/min per team: 401 / 200 / 429 confirmed with real
+      completions. The Section 3 application was deliberately not switched to the gateway.
+
+  - id: "2026-09-13-010"
+    timestamp: "2026-09-13T20:05:00Z"
+    author: "sandrotanaka"
+    status: open
+    type: decision
+    content: >-
+      Decide whether the Section 3 app (llm-routing) should consume the LLM through the
+      gateway (base_url http://llm.parasol-gateway.svc/v1 + a platform key, both in Vault
+      under secrets/litellm/credentials) for a Module 7 beat about token budgets, and whether
+      the API Product / key-request flow becomes a Module 4 beat. Both change the demo
+      roteiro and need timing in the 2-hour session.
+

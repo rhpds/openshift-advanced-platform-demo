@@ -19,6 +19,13 @@ p, role:default/api-admin, kuadrant.apikey.read.all, read, allow
 p, role:default/api-admin, kuadrant.apikey.update.all, update, allow
 p, role:default/api-admin, kuadrant.apikey.delete.all, delete, allow
 p, role:default/api-admin, kuadrant.apikey.approve, update, allow
+p, role:default/api-admin, kuadrant.apiproduct.read.own, read, allow
+p, role:default/api-admin, kuadrant.apiproduct.update.own, update, allow
+p, role:default/api-admin, kuadrant.apiproduct.delete.own, delete, allow
+p, role:default/api-admin, kuadrant.apikey.list, read, allow
+p, role:default/api-consumer, kuadrant.apikey.list, read, allow
+p, role:default/plugins, lightspeed.chat.update, update, allow
+p, role:default/platformengineer, scaffolder.template.management, use, allow
 p, role:default/api-admin, kuadrant.apikey.read.own, read, allow
 p, role:default/api-admin, kuadrant.apikey.update.own, update, allow
 p, role:default/api-admin, kuadrant.apikey.delete.own, delete, allow

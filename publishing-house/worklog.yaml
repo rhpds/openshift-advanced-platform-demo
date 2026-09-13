@@ -75,3 +75,33 @@ entries:
       annotation (the mount point condition should include hasAnnotation), and the demo
       loads a foreign catalog (ai-customer-service-platform) whose owner group website-team
       does not exist. Documented in 02-details as "ignore during the demo".
+
+  - id: "2026-09-13-006"
+    timestamp: "2026-09-13T16:50:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-13T16:50:00Z"
+    resolved_by: "sandrotanaka"
+    type: note
+    content: >-
+      RHCL spike completed on cluster-ql7cw. Installed rhcl-operator 1.4.3 + Kuadrant CR +
+      console plugin (scripts/rhcl/install.sh); north-south Gateway of class istio exposed
+      through an edge Route (scripts/rhcl/gateway.sh; the namespace needs
+      istio.io/dataplane-mode=ambient because the demo's Istio CR restricts discovery);
+      HTTPRoute + API-key AuthPolicy (apiKey.allNamespaces: true is mandatory) +
+      RateLimitPolicy 10 req/10s per consumer on parasol-insurance-prod
+      (scripts/rhcl/parasol-api.sh). End-to-end test: 401 without key, 200 with key,
+      429 after the 10th call, original Parasol Route unaffected. This is the Module 3
+      "part 1b" beat working; content still to be written.
+
+  - id: "2026-09-13-007"
+    timestamp: "2026-09-13T16:50:00Z"
+    author: "sandrotanaka"
+    status: open
+    type: action
+    content: >-
+      Kuadrant Developer Hub plugins (0.4.0) prepared in scripts/rhdh-kuadrant/apply.sh but
+      not yet executed: it turns on the permission framework + RBAC for the whole RHDH,
+      so after running it walk Modules 4-7 as dev1 and pe1 before accepting. Plugin is
+      declared for RHDH 1.10; instance runs 1.9.8. rollback.sh restores the backup.
+

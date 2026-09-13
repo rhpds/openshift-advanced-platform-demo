@@ -1,0 +1,219 @@
+{
+  "info": {
+    "name": "Parasol Advanced App Platform — smoke and policy tests",
+    "_postman_id": "9c1f3c0e-6b8b-4a4e-9d2e-parasol-platform",
+    "description": "Smoke tests for a provisioned ocp4-adv-app-platform-demo instance with the Connectivity Link layer.\n\nImport this collection and the environment file next to it, set `domain` (apps.cluster-xxxxx...), `partner_api_key` (oc get secret parasol-api-key-partner1 -n kuadrant-system) and `sonar_token` (optional). Run the folders in order with the Collection Runner; the 'Rate limit' folder must run with delay 0 ms to hit the 429.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "domain", "value": "apps.cluster-ql7cw.dyn.redhatworkshops.io" }
+  ],
+  "item": [
+    {
+      "name": "1. Platform endpoints",
+      "item": [
+        {
+          "name": "OpenShift console",
+          "request": { "method": "GET", "url": "https://console-openshift-console.{{domain}}/" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('console answers', () => pm.expect(pm.response.code).to.be.oneOf([200, 302, 303]));"
+          ] } }]
+        },
+        {
+          "name": "Developer Hub",
+          "request": { "method": "GET", "url": "https://backstage-developer-hub-rhdh.{{domain}}/" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('RHDH serves the app', () => pm.response.to.have.status(200));",
+            "pm.test('RHDH is the Developer Hub', () => pm.expect(pm.response.text()).to.include('Developer Hub'));"
+          ] } }]
+        },
+        {
+          "name": "Developer Hub OIDC login redirect",
+          "request": { "method": "GET", "url": "https://backstage-developer-hub-rhdh.{{domain}}/api/auth/oidc/start?env=production" },
+          "protocolProfileBehavior": { "followRedirects": false },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('login redirects to Keycloak (302); 500 means restart RHDH', () => pm.response.to.have.status(302));",
+            "pm.test('redirect goes to the SSO realm', () => pm.expect(pm.response.headers.get('Location')).to.include('/realms/backstage/'));"
+          ] } }]
+        },
+        {
+          "name": "Keycloak realm discovery",
+          "request": { "method": "GET", "url": "https://sso.{{domain}}/realms/backstage/.well-known/openid-configuration" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('realm backstage published', () => pm.response.to.have.status(200));",
+            "pm.test('issuer matches', () => pm.expect(pm.response.json().issuer).to.include('/realms/backstage'));"
+          ] } }]
+        },
+        {
+          "name": "GitLab",
+          "request": { "method": "GET", "url": "https://gitlab-gitlab.{{domain}}/api/v4/version" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('GitLab API reachable (401 without token is fine)', () => pm.expect(pm.response.code).to.be.oneOf([200, 401]));"
+          ] } }]
+        },
+        {
+          "name": "SonarQube status",
+          "request": { "method": "GET", "url": "https://sonarqube-sonarqube.{{domain}}/api/system/status" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('SonarQube UP', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('UP'); });"
+          ] } }]
+        },
+        {
+          "name": "Quay health",
+          "request": { "method": "GET", "url": "https://quay.{{domain}}/health/instance" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Quay healthy', () => pm.response.to.have.status(200));"
+          ] } }]
+        },
+        {
+          "name": "Quay: secured image tags",
+          "request": { "method": "GET", "url": "https://quay.{{domain}}/api/v1/repository/parasol/parasol-insurance-secured/tag/?onlyActiveTags=true&limit=20" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('repository readable', () => pm.response.to.have.status(200));",
+            "const tags = pm.response.json().tags.map(t => t.name);",
+            "pm.test('latest tag present', () => pm.expect(tags).to.include('latest'));",
+            "pm.test('a versioned tag exists (1.0 or 1.1)', () => pm.expect(tags.some(t => /^1\\.[0-9]+$/.test(t))).to.be.true);"
+          ] } }]
+        },
+        {
+          "name": "Vault health",
+          "request": { "method": "GET", "url": "https://vault-vault.{{domain}}/v1/sys/health" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Vault unsealed and initialised', () => { pm.response.to.have.status(200); const j = pm.response.json(); pm.expect(j.sealed).to.be.false; pm.expect(j.initialized).to.be.true; });"
+          ] } }]
+        },
+        {
+          "name": "Trusted Profile Analyzer",
+          "request": { "method": "GET", "url": "https://server-trusted-profile-analyzer.{{domain}}/" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('TPA reachable', () => pm.expect(pm.response.code).to.be.oneOf([200, 302, 303]));"
+          ] } }]
+        },
+        {
+          "name": "Argo CD (rhdh-gitops) health",
+          "request": { "method": "GET", "url": "https://rhdh-gitops-server-rhdh-gitops.{{domain}}/api/version" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Argo CD API answers', () => pm.response.to.have.status(200));",
+            "pm.test('reports a version', () => pm.expect(pm.response.json().Version).to.be.a('string'));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "2. Parasol application",
+      "item": [
+        {
+          "name": "Prod (direct route): list claims",
+          "request": { "method": "GET", "url": "https://parasol-insurance-parasol-insurance-prod.{{domain}}/api/claims" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('returns a JSON array of claims', () => { const j = pm.response.json(); pm.expect(j).to.be.an('array'); pm.expect(j.length).to.be.above(0); });",
+            "pm.test('a claim has a claimNumber', () => pm.expect(pm.response.json()[0]).to.have.property('claimNumber'));",
+            "pm.collectionVariables.set('claim_number', pm.response.json()[0].claimNumber);"
+          ] } }]
+        },
+        {
+          "name": "Prod (direct route): one claim",
+          "request": { "method": "GET", "url": "https://parasol-insurance-parasol-insurance-prod.{{domain}}/api/claims/{{claim_number}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 for a known claim', () => pm.response.to.have.status(200));"
+          ] } }]
+        },
+        {
+          "name": "Secured prod: list claims",
+          "request": { "method": "GET", "url": "https://parasol-insurance-secured-parasol-insurance-secured-prod.{{domain}}/api/claims" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('secured prod answers (ImagePullBackOff shows as 503)', () => pm.response.to.have.status(200));"
+          ] } }]
+        },
+        {
+          "name": "Dev: list claims",
+          "request": { "method": "GET", "url": "https://parasol-insurance-parasol-insurance-dev.{{domain}}/api/claims" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('dev answers (crash-loop after a restart shows as 503)', () => pm.response.to.have.status(200));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "3. Connectivity Link: governed API",
+      "item": [
+        {
+          "name": "Without key -> 401",
+          "request": { "method": "GET", "url": "https://parasol-api-parasol-insurance-prod.{{domain}}/api/claims" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('401 from the gateway', () => pm.response.to.have.status(401));",
+            "pm.test('Authorino challenge header', () => pm.expect(pm.response.headers.get('www-authenticate')).to.include('APIKEY'));"
+          ] } }]
+        },
+        {
+          "name": "Wrong key -> 401",
+          "request": { "method": "GET", "url": "https://parasol-api-parasol-insurance-prod.{{domain}}/api/claims", "header": [{ "key": "Authorization", "value": "APIKEY not-a-real-key" }] },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('401 with an invalid key', () => pm.response.to.have.status(401));"
+          ] } }]
+        },
+        {
+          "name": "Partner key -> 200",
+          "request": { "method": "GET", "url": "https://parasol-api-parasol-insurance-prod.{{domain}}/api/claims", "header": [{ "key": "Authorization", "value": "APIKEY {{partner_api_key}}" }] },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 with the partner key', () => pm.response.to.have.status(200));",
+            "pm.test('same payload as the direct route', () => pm.expect(pm.response.json()).to.be.an('array'));"
+          ] } }]
+        },
+        {
+          "name": "UI path is not exposed through the gateway",
+          "request": { "method": "GET", "url": "https://parasol-api-parasol-insurance-prod.{{domain}}/", "header": [{ "key": "Authorization", "value": "APIKEY {{partner_api_key}}" }] },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('only /api is routed (404 elsewhere)', () => pm.response.to.have.status(404));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "4. Connectivity Link: rate limit (run with delay 0 ms)",
+      "item": [
+        {
+          "name": "Burst call (iteration {{iteration}})",
+          "request": { "method": "GET", "url": "https://parasol-api-parasol-insurance-prod.{{domain}}/api/claims", "header": [{ "key": "Authorization", "value": "APIKEY {{partner_api_key}}" }] },
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "// run this folder alone in the Collection Runner with iterations = 14, delay = 0",
+              "if (pm.info.iteration === 0) { pm.collectionVariables.set('burst_ok', 0); pm.collectionVariables.set('burst_limited', 0); }"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const ok = Number(pm.collectionVariables.get('burst_ok')) + (pm.response.code === 200 ? 1 : 0);",
+              "const limited = Number(pm.collectionVariables.get('burst_limited')) + (pm.response.code === 429 ? 1 : 0);",
+              "pm.collectionVariables.set('burst_ok', ok); pm.collectionVariables.set('burst_limited', limited);",
+              "pm.test('each call is 200 or 429, never anything else', () => pm.expect(pm.response.code).to.be.oneOf([200, 429]));",
+              "if (pm.info.iteration === pm.info.iterationCount - 1) {",
+              "  pm.test('10 requests per 10 s enforced: ' + ok + ' x 200, ' + limited + ' x 429', () => { pm.expect(ok).to.be.within(9, 11); pm.expect(limited).to.be.above(0); });",
+              "}"
+            ] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Connectivity Link: developer portal objects (via OpenShift API)",
+      "description": "Needs `ocp_token` (oc whoami -t) in the environment. Read-only.",
+      "item": [
+        {
+          "name": "API Product published",
+          "request": { "method": "GET", "url": "https://api.{{cluster_domain}}:6443/apis/devportal.kuadrant.io/v1alpha1/namespaces/parasol-insurance-prod/apiproducts/parasol-claims-api", "header": [{ "key": "Authorization", "value": "Bearer {{ocp_token}}" }] },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('APIProduct exists', () => pm.response.to.have.status(200));",
+            "pm.test('published, manual approval, targets parasol-api', () => { const s = pm.response.json().spec; pm.expect(s.publishStatus).to.eql('Published'); pm.expect(s.approvalMode).to.eql('manual'); pm.expect(s.targetRef.name).to.eql('parasol-api'); });"
+          ] } }]
+        },
+        {
+          "name": "Policies enforced",
+          "request": { "method": "GET", "url": "https://api.{{cluster_domain}}:6443/apis/kuadrant.io/v1/namespaces/parasol-insurance-prod/authpolicies/parasol-api", "header": [{ "key": "Authorization", "value": "Bearer {{ocp_token}}" }] },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('AuthPolicy Enforced', () => { pm.response.to.have.status(200); const c = pm.response.json().status.conditions.find(x => x.type === 'Enforced'); pm.expect(c.status).to.eql('True'); });"
+          ] } }]
+        }
+      ]
+    }
+  ]
+}

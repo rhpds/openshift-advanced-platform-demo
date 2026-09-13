@@ -97,11 +97,29 @@ entries:
   - id: "2026-09-13-007"
     timestamp: "2026-09-13T16:50:00Z"
     author: "sandrotanaka"
-    status: open
+    status: resolved
+    resolved_at: "2026-09-13T19:50:00Z"
+    resolved_by: "sandrotanaka"
     type: action
     content: >-
       Kuadrant Developer Hub plugins (0.4.0) prepared in scripts/rhdh-kuadrant/apply.sh but
       not yet executed: it turns on the permission framework + RBAC for the whole RHDH,
       so after running it walk Modules 4-7 as dev1 and pe1 before accepting. Plugin is
       declared for RHDH 1.10; instance runs 1.9.8. rollback.sh restores the backup.
+
+  - id: "2026-09-13-008"
+    timestamp: "2026-09-13T19:50:00Z"
+    author: "sandrotanaka"
+    status: open
+    type: note
+    content: >-
+      Kuadrant Developer Hub plugins 0.4.0 enabled on cluster-ql7cw (scripts/rhdh-kuadrant/
+      apply.sh + db-pool.sh). Works on RHDH 1.9.8. Two things found and fixed: (1) enabling
+      RBAC + Kuadrant backends exhausts PostgreSQL max_connections=100 ("too many clients"),
+      fixed by knex pool min 0/max 4 in app-config and POSTGRESQL_MAX_CONNECTIONS=300;
+      (2) rbac-policy is subPath-mounted, so policy edits need a pod restart. Headless walk
+      (walk-rhdh.mjs) as dev1 and pe1 through Modules 4-7 pages: no denials left; the audit
+      log showed lightspeed.chat.update missing from the demo policy (added), plus own-scoped
+      Kuadrant permissions for api-admin (added). Still manual: running the template and a
+      Lightspeed conversation as dev1.
 

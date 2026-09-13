@@ -79,6 +79,10 @@ for i in $(seq 1 24); do
   [ "$(oc get gateway parasol-gateway -n $NS -o jsonpath='{.status.conditions[?(@.type=="Programmed")].status}' 2>/dev/null)" = "True" ] && break
   sleep 5
 done
+# two replicas: Envoy reloads (and occasionally restarts) when Connectivity Link policies change;
+# a single replica means a few seconds of "connection refused" on every policy edit
+oc scale deployment/parasol-gateway-istio -n $NS --replicas=2 >/dev/null 2>&1 || true
+
 echo "== Gateway"
 oc get gateway parasol-gateway -n $NS -o custom-columns='NAME:.metadata.name,CLASS:.spec.gatewayClassName,ACCEPTED:.status.conditions[?(@.type=="Accepted")].status,PROGRAMMED:.status.conditions[?(@.type=="Programmed")].status,ADDR:.status.addresses[*].value'
 echo "== created by Istio"

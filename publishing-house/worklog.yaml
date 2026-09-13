@@ -148,7 +148,9 @@ entries:
   - id: "2026-09-13-010"
     timestamp: "2026-09-13T20:05:00Z"
     author: "sandrotanaka"
-    status: open
+    status: resolved
+    resolved_at: "2026-09-13T21:30:00Z"
+    resolved_by: "sandrotanaka"
     type: decision
     content: >-
       Decide whether the Section 3 app (llm-routing) should consume the LLM through the
@@ -175,4 +177,32 @@ entries:
       parasol.rhdp.io/gateway-access=true (gateway.sh labels parasol-insurance-prod).
       Known remaining trade-off: parasol-api.sh keeps allNamespaces: true because the
       Developer Hub key-request flow creates key Secrets outside kuadrant-system.
+
+  - id: "2026-09-13-012"
+    timestamp: "2026-09-13T21:30:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-13T21:30:00Z"
+    resolved_by: "sandrotanaka"
+    type: note
+    content: >-
+      Both beats accepted and written: Module 4 Part 4 (API Products + self-service keys) and
+      Module 7 Part 4 (LLM token budgets), with the Section 3 app dev2/llm-routing switched to
+      the gateway (llm-switch-app.sh: Vault kv mount + one line in the user's gitops repo).
+      Hard-won findings on RHCL 1.4.3, all encoded in the scripts: (1) the developer portal
+      controller must be enabled on the Kuadrant CR (components.developerPortal) or APIKey
+      requests never get a status; it copies approved keys into kuadrant-system with the
+      AuthPolicy's labels, so parasol-api keeps keys there and needs no allNamespaces;
+      (2) a route has one effective RateLimitPolicy and the PlanPolicy-derived one wins, so the
+      10 req/10 s burst limit is attached to the Gateway as an override scoped to the API host;
+      plan daily quotas are declared, not the effective limiter; (3) any policy change on the
+      route resets pending/approved portal requests (re-approval needed), so run api-product
+      last and do not touch policies during the session; (4) the wasm shim breaks token
+      counting ("CelError UndeclaredReference(string)") when the LLM AuthPolicy has more than
+      one authentication method; keep a single Bearer identity; (5) the operator stops
+      programming limits if a route without sectionName can pair with the internal llm
+      listener; pin parentRefs.sectionName; (6) Envoy restarts on policy reloads; the gateway
+      runs 2 replicas and tests wait for stability; (7) LLM completions need HTTPRoute
+      timeouts (120s). Verified at the end: API 401/200/429 for partner1 and for the portal
+      key, LLM 401/200 and 429 after ~1500 tokens, application classifying through the gateway.
 

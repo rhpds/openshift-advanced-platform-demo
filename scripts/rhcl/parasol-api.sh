@@ -14,7 +14,8 @@ D=$(oc get ingresses.config cluster -o jsonpath='{.spec.domain}')
 HOST="parasol-api-${NS}.${D}"
 
 if [ "${1:-}" = "delete" ]; then
-  oc delete ratelimitpolicy/parasol-api authpolicy/parasol-api httproute/parasol-api -n $NS --ignore-not-found
+  oc delete planpolicy/parasol-api-plans authpolicy/parasol-api httproute/parasol-api -n $NS --ignore-not-found
+  oc delete ratelimitpolicy/parasol-api -n $GWNS --ignore-not-found
   oc delete secret parasol-api-key-partner1 -n $KEYNS --ignore-not-found
   oc delete route parasol-api -n $GWNS --ignore-not-found
   echo "removed the parasol-api HTTPRoute, policies, API key and Route"
@@ -60,6 +61,10 @@ spec:
   parentRefs:
     - name: parasol-gateway
       namespace: $GWNS
+      # pin the listener: without it the Kuadrant operator also pairs this route with the
+      # internal "llm" listener, logs "http route does not belong to the listener" and stops
+      # programming the token limits of the LLM route
+      sectionName: http
   hostnames:
     - $HOST
   rules:
@@ -104,36 +109,81 @@ spec:
                 userid:
                   selector: auth.identity.metadata.annotations.secret\.kuadrant\.io/user-id
 ---
-# How much: 10 requests per 10 seconds per API key
+EOF
+
+# How much: 10 requests per 10 seconds per consumer. Attached to the GATEWAY as an override and
+# scoped to the API hostname: a route has one effective limiter and the plan-derived policy
+# below would otherwise win; gateway overrides beat route-level policies.
+oc apply -f - <<EOF
 apiVersion: kuadrant.io/v1
 kind: RateLimitPolicy
 metadata:
   name: parasol-api
+  namespace: $GWNS
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: parasol-gateway
+  overrides:
+    limits:
+      per-consumer:
+        rates:
+          - limit: 10
+            window: 10s
+        when:
+          - predicate: request.host == "$HOST"
+        counters:
+          - expression: auth.identity.userid
+EOF
+
+echo "waiting for the policies to be enforced..."
+for i in $(seq 1 36); do
+  a=$(oc get authpolicy parasol-api -n $NS -o jsonpath='{.status.conditions[?(@.type=="Enforced")].status}' 2>/dev/null)
+  r=$(oc get ratelimitpolicy parasol-api -n $GWNS -o jsonpath='{.status.conditions[?(@.type=="Enforced")].status}' 2>/dev/null)
+  [ "$a" = "True" ] && [ "$r" = "True" ] && break
+  sleep 5
+done
+# The PlanPolicy derives a route-level RateLimitPolicy (daily quotas per tier) that feeds the
+# developer portal; the gateway override above remains the effective limiter.
+oc apply -f - <<EOF
+# Plans the developer portal offers when a developer requests a key (tier is stamped on the
+# approved key as secret.kuadrant.io/plan-id). Connectivity Link derives a RateLimitPolicy from
+# it, but a route has a single effective limiter and the RateLimitPolicy above takes precedence;
+# in RHCL 1.4 the plan-derived limits are informational here (see the lab worklog).
+apiVersion: extensions.kuadrant.io/v1alpha1
+kind: PlanPolicy
+metadata:
+  name: parasol-api-plans
   namespace: $NS
 spec:
   targetRef:
     group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: parasol-api
-  limits:
-    per-consumer:
-      rates:
-        - limit: 10
-          window: 10s
-      counters:
-        - expression: auth.identity.userid
+  plans:
+    - tier: gold
+      predicate: |
+        has(auth.identity) && auth.identity.metadata.annotations["secret.kuadrant.io/plan-id"] == "gold"
+      limits:
+        daily: 100000
+    - tier: silver
+      predicate: |
+        has(auth.identity) && auth.identity.metadata.annotations["secret.kuadrant.io/plan-id"] == "silver"
+      limits:
+        daily: 10000
+    - tier: bronze
+      predicate: |
+        has(auth.identity) && auth.identity.metadata.annotations["secret.kuadrant.io/plan-id"] == "bronze"
+      limits:
+        daily: 1000
 EOF
+sleep 15
 
-echo "waiting for the policies to be enforced..."
-for i in $(seq 1 36); do
-  a=$(oc get authpolicy parasol-api -n $NS -o jsonpath='{.status.conditions[?(@.type=="Enforced")].status}' 2>/dev/null)
-  r=$(oc get ratelimitpolicy parasol-api -n $NS -o jsonpath='{.status.conditions[?(@.type=="Enforced")].status}' 2>/dev/null)
-  [ "$a" = "True" ] && [ "$r" = "True" ] && break
-  sleep 5
-done
 echo "== status"
 oc get httproute parasol-api -n $NS -o custom-columns='HTTPROUTE:.metadata.name,ACCEPTED:.status.parents[0].conditions[?(@.type=="Accepted")].status,RESOLVED:.status.parents[0].conditions[?(@.type=="ResolvedRefs")].status'
-oc get authpolicy,ratelimitpolicy parasol-api -n $NS -o custom-columns='KIND:.kind,ACCEPTED:.status.conditions[?(@.type=="Accepted")].status,ENFORCED:.status.conditions[?(@.type=="Enforced")].status,MSG:.status.conditions[?(@.type=="Enforced")].message'
+oc get authpolicy/parasol-api planpolicy/parasol-api-plans -n $NS -o custom-columns='KIND:.kind,ACCEPTED:.status.conditions[?(@.type=="Accepted")].status,ENFORCED:.status.conditions[?(@.type=="Enforced")].status,MSG:.status.conditions[?(@.type=="Enforced")].message'
+oc get ratelimitpolicy/parasol-api -n $GWNS -o custom-columns='KIND:.kind,ACCEPTED:.status.conditions[?(@.type=="Accepted")].status,ENFORCED:.status.conditions[?(@.type=="Enforced")].status,MSG:.status.conditions[?(@.type=="Enforced")].message'
 
 KEY=$(oc get secret parasol-api-key-partner1 -n $KEYNS -o jsonpath='{.data.api_key}' | base64 -d)
 # the gateway's Envoy reloads to load the Kuadrant wasm filter; 502/503 until it is done

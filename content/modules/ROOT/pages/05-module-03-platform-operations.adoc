@@ -155,8 +155,9 @@ for i in $(seq 1 12); do curl -sk -o /dev/null -w '%{http_code} ' -H "Authorizat
 * Point out the sequence: nine or ten `200`, then `429`.
 * "After the tenth call in ten seconds the gateway answers 429 Too Many Requests. The Parasol pods never saw those calls. The limit is per consumer, because the AuthPolicy handed the consumer identity to the rate limiter."
 
-. Back in the console, open the `RateLimitPolicy` YAML briefly:
-* Point out `limit: 10`, `window: 10s` and the counter `auth.identity.userid`.
+. Back in the console, open the `RateLimitPolicy` YAML briefly (it is attached to the gateway, in the `parasol-gateway` namespace, as an override scoped to the API hostname):
+* Point out `limit: 10`, `window: 10s`, the counter `auth.identity.userid` and the `when` predicate on the hostname.
+* "Attached to the gateway, it applies whatever other policies a team attaches to the route. That is the platform team's guardrail."
 * "Changing the limit for a partner is a one-line change in Git. No redeploy, no code review of the application."
 
 image::rhcl-gateways.png[OpenShift console Networking → Gateways listing parasol-gateway (class istio) next to the six waypoint gateways of the Parasol namespaces,link=self,window=blank,align="center",width=700,title="Gateways: the front door (parasol-gateway) and the mesh waypoints"]

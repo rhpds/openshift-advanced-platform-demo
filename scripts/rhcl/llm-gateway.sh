@@ -1,26 +1,35 @@
 #!/usr/bin/env bash
 # Phase 2 spike: put the external LLM endpoint (Red Hat MaaS, OpenAI-compatible) behind the
 # parasol-gateway with Connectivity Link policies:
-#   - AuthPolicy: callers present a PLATFORM key in the X-Platform-Key header; Authorino
-#     resolves the matching Secret (kept in kuadrant-system, admin-only) and injects the
-#     provider key it carries as the upstream Authorization header. The provider key never
-#     appears in a route, a policy or the application.
+#   - AuthPolicy: callers present a PLATFORM key as "Authorization: Bearer <key>" (what any
+#     OpenAI client sends, so the application needs no code change). Authorino resolves the
+#     matching Secret (kept in kuadrant-system, admin-only) and injects the provider key it
+#     carries as the upstream "api-key" header; the route then strips the caller's Authorization
+#     header. The provider key never appears in a route, a policy or the application.
+#     One authentication method only: a second one (e.g. a custom header) makes the RHCL 1.4
+#     wasm shim fail the token report ("CelError UndeclaredReference(string)") and no tokens
+#     are ever counted.
 #   - TokenRateLimitPolicy: per-consumer token budget, counted from usage.total_tokens
 # The application is NOT switched here. To point the Section 3 app at the gateway later,
-# change its LLM base URL to http://llm.parasol-gateway.svc/v1, drop the provider key and send
-# the platform key in X-Platform-Key (e.g. quarkus.rest-client custom header).
+# change its LLM base URL to http://llm.parasol-gateway.svc/v1 and its API key to the platform
+# key (see llm-switch-app.sh). No code change: the client keeps sending Authorization: Bearer.
 #
-#   bash scripts/rhcl/llm-gateway.sh           # create + test from inside the cluster
-#   bash scripts/rhcl/llm-gateway.sh delete    # remove
+#   bash scripts/rhcl/llm-gateway.sh                 # create + test from inside the cluster
+#   bash scripts/rhcl/llm-gateway.sh delete          # remove route, policies, listener (keeps the keys,
+#                                                    #   Vault may still reference the team key)
+#   bash scripts/rhcl/llm-gateway.sh delete --purge  # also delete the platform keys
 set -euo pipefail
 GWNS=parasol-gateway
-SRC_NS=parasol-insurance-secured-dev2          # where the demo keeps litellm-credentials (Vault via ESO)
-TEAM=team-claims
+# provider URL + key come from a namespace that still points at the provider directly. Never use
+# a namespace switched by llm-switch-app.sh: its base_url is the gateway itself (a loop).
+SRC_NS=parasol-insurance-prod
+TEAM=team-claims        # the application's team (its own 1.5k tokens/min counter)
+DEMO=team-demo          # key used on stage to exhaust the budget without touching the app
 KEYNS=kuadrant-system                            # Authorino's namespace: only cluster admins can write here
 if [ "${1:-}" = "delete" ]; then
   oc delete tokenratelimitpolicy/llm authpolicy/llm httproute/llm -n $GWNS --ignore-not-found
   oc delete destinationrule/maas serviceentry/maas service/llm -n $GWNS --ignore-not-found
-  oc delete secret/llm-key-$TEAM -n $KEYNS --ignore-not-found
+  [ "${2:-}" = "--purge" ] && oc delete secret/llm-key-$TEAM secret/llm-key-$DEMO -n $KEYNS --ignore-not-found
   oc patch gateway parasol-gateway -n $GWNS --type=json -p '[{"op":"replace","path":"/spec/listeners","value":[{"name":"http","protocol":"HTTP","port":80,"hostname":"*.'"$(oc get ingresses.config cluster -o jsonpath='{.spec.domain}')"'","allowedRoutes":{"namespaces":{"from":"All"}}}]}]' >/dev/null || true
   echo "removed the LLM route, policies, key and the internal listener"
   exit 0
@@ -37,13 +46,21 @@ MAAS_KEY_B64=$(oc get secret litellm-credentials -n $SRC_NS -o jsonpath='{.data.
 # AuthPolicy needs no allNamespaces and no literal credential.
 if ! oc get secret llm-key-$TEAM -n $KEYNS >/dev/null 2>&1; then
   PK=$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32)
-  oc create secret generic llm-key-$TEAM -n $KEYNS --from-literal=api_key="$PK" --from-literal=provider_key="Bearer $(echo "$MAAS_KEY_B64" | base64 -d)" >/dev/null
+  oc create secret generic llm-key-$TEAM -n $KEYNS --from-literal=api_key="$PK" --from-literal=provider_key="$(echo "$MAAS_KEY_B64" | base64 -d)" >/dev/null
   oc label secret llm-key-$TEAM -n $KEYNS authorino.kuadrant.io/managed-by=authorino app=parasol-llm --overwrite >/dev/null
   oc annotate secret llm-key-$TEAM -n $KEYNS secret.kuadrant.io/user-id=$TEAM --overwrite >/dev/null
 fi
+if ! oc get secret llm-key-$DEMO -n $KEYNS >/dev/null 2>&1; then
+  DK=$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32)
+  oc create secret generic llm-key-$DEMO -n $KEYNS --from-literal=api_key="$DK" --from-literal=provider_key="$(echo "$MAAS_KEY_B64" | base64 -d)" >/dev/null
+  oc label secret llm-key-$DEMO -n $KEYNS authorino.kuadrant.io/managed-by=authorino app=parasol-llm --overwrite >/dev/null
+  oc annotate secret llm-key-$DEMO -n $KEYNS secret.kuadrant.io/user-id=$DEMO --overwrite >/dev/null
+fi
 
-# second listener for the in-cluster hostname
-oc patch gateway parasol-gateway -n $GWNS --type=json -p '[{"op":"add","path":"/spec/listeners/-","value":{"name":"llm","protocol":"HTTP","port":80,"hostname":"llm.parasol-gateway.svc","allowedRoutes":{"namespaces":{"from":"Same"}}}}]' 2>/dev/null || true
+# second listener for the in-cluster hostname (idempotent: a duplicate name breaks the gateway)
+if ! oc get gateway parasol-gateway -n $GWNS -o jsonpath='{.spec.listeners[*].name}' | grep -qw llm; then
+  oc patch gateway parasol-gateway -n $GWNS --type=json -p '[{"op":"add","path":"/spec/listeners/-","value":{"name":"llm","protocol":"HTTP","port":80,"hostname":"llm.parasol-gateway.svc","allowedRoutes":{"namespaces":{"from":"Same"}}}}]'
+fi
 
 oc apply -f - <<EOF
 # stable in-cluster name for the application: http://llm.parasol-gateway.svc/v1
@@ -103,21 +120,29 @@ spec:
         - path:
             type: PathPrefix
             value: /v1
+      # LLM completions take longer than Envoy's default request timeout; the application's
+      # classification calls were being cut with "Connection was closed"
+      timeouts:
+        request: 120s
+        backendRequest: 120s
       filters:
         - type: URLRewrite
           urlRewrite:
             hostname: $MAAS_HOST
+        # the caller's platform key must not reach the provider; this runs after ext_authz
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            remove:
+              - Authorization
       backendRefs:
         - group: networking.istio.io
           kind: Hostname
           name: $MAAS_HOST
           port: 443
 ---
-# who: platform key in X-Platform-Key, validated by Authorino against Secrets in its own
-# namespace (no allNamespaces: a labelled Secret elsewhere cannot mint a key). The upstream
-# Authorization header is built from the provider_key field of the matched Secret. The caller
-# must NOT send Authorization itself: the wasm shim appends injected headers, and a doubled
-# Authorization is rejected by the provider.
+# who: platform key (Bearer), validated by Authorino against Secrets in its own namespace (no allNamespaces: a labelled Secret elsewhere cannot mint a key). The provider
+# key is injected as "api-key" (a header the caller never sends, so the wasm shim's append
+# semantics are harmless); the provider accepts it once the route removed Authorization.
 apiVersion: kuadrant.io/v1
 kind: AuthPolicy
 metadata:
@@ -130,14 +155,14 @@ spec:
     name: llm
   rules:
     authentication:
-      platform-key:
+      platform-key-bearer:
         apiKey:
           selector:
             matchLabels:
               app: parasol-llm
         credentials:
-          customHeader:
-            name: X-Platform-Key
+          authorizationHeader:
+            prefix: Bearer
     response:
       success:
         filters:
@@ -147,9 +172,8 @@ spec:
                 userid:
                   selector: auth.identity.metadata.annotations.secret\.kuadrant\.io/user-id
         headers:
-          authorization:
+          api-key:
             plain:
-              # Authorino cannot concatenate strings, so the field already carries "Bearer <key>"
               selector: auth.identity.data.provider_key|@base64:decode
 ---
 # how much: tokens per consumer, counted from usage.total_tokens in the OpenAI-style response
@@ -164,6 +188,8 @@ spec:
     kind: HTTPRoute
     name: llm
   limits:
+    # one budget per identity (auth.identity.userid). The application's team and the stage key
+    # have separate counters, so the burst on stage never throttles the application.
     per-team:
       rates:
         - limit: 1500
@@ -181,17 +207,17 @@ done
 oc get httproute llm -n $GWNS -o custom-columns='HTTPROUTE:.metadata.name,ACCEPTED:.status.parents[0].conditions[?(@.type=="Accepted")].status,RESOLVED:.status.parents[0].conditions[?(@.type=="ResolvedRefs")].status'
 oc get authpolicy,tokenratelimitpolicy llm -n $GWNS -o custom-columns='KIND:.kind,ACCEPTED:.status.conditions[?(@.type=="Accepted")].status,ENFORCED:.status.conditions[?(@.type=="Enforced")].status,MSG:.status.conditions[?(@.type=="Enforced")].message'
 
-PK=$(oc get secret llm-key-$TEAM -n $KEYNS -o jsonpath='{.data.api_key}' | base64 -d)
-echo "== tests from inside the cluster (http://llm.parasol-gateway.svc/v1)"
+PK=$(oc get secret llm-key-$DEMO -n $KEYNS -o jsonpath='{.data.api_key}' | base64 -d)
+echo "== tests from inside the cluster (http://llm.parasol-gateway.svc/v1), with the $DEMO key"
 oc run llm-test -n $GWNS --rm -i --restart=Never --image=quay.io/curl/curl:latest --env="PK=$PK" -- sh -c '
   sleep 20
   echo -n "   without key -> "; curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 30 http://llm.parasol-gateway.svc/v1/models
-  echo -n "   with platform key, /v1/models -> "; curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 30 -H "X-Platform-Key: $PK" http://llm.parasol-gateway.svc/v1/models
-  echo -n "   chat completion -> "; curl -s --max-time 90 -H "X-Platform-Key: $PK" -H "Content-Type: application/json" -w " HTTP %{http_code}\n" \
+  echo -n "   Authorization: Bearer <platform key>, /v1/models -> "; curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 30 -H "Authorization: Bearer $PK" http://llm.parasol-gateway.svc/v1/models
+  echo -n "   chat completion -> "; curl -s --max-time 90 -H "Authorization: Bearer $PK" -H "Content-Type: application/json" -w " HTTP %{http_code}\n" \
      -d "{\"model\":\"qwen3-14b\",\"messages\":[{\"role\":\"user\",\"content\":\"Reply with one word: CLAIMS\"}],\"max_tokens\":8}" \
      http://llm.parasol-gateway.svc/v1/chat/completions | grep -oE "\"total_tokens\":[0-9]+| HTTP [0-9]+" | tr "\n" " "; echo
   echo -n "   burst until the 1500-token minute budget is spent -> "
-  for i in $(seq 1 12); do curl -s -o /dev/null -w "%{http_code} " --max-time 90 -H "X-Platform-Key: $PK" -H "Content-Type: application/json" \
+  for i in $(seq 1 12); do curl -s -o /dev/null -w "%{http_code} " --max-time 90 -H "Authorization: Bearer $PK" -H "Content-Type: application/json" \
      -d "{\"model\":\"qwen3-14b\",\"messages\":[{\"role\":\"user\",\"content\":\"Write 120 words about insurance claims.\"}],\"max_tokens\":220}" \
      http://llm.parasol-gateway.svc/v1/chat/completions; done; echo "(expected: 200s then 429)"
 ' 2>&1 | grep -vE '^pod .* deleted'

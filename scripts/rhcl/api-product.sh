@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Publish the Parasol claims API as a Connectivity Link API Product, so it shows up in the
-# Developer Hub "API Products" page (Kuadrant plugin) with self-service key requests, and
-# attach a PlanPolicy with the tiers the portal offers.
+# Developer Hub "API Products" page (Kuadrant plugin) with self-service key requests. The plans
+# the portal offers come from the PlanPolicy that parasol-api.sh attaches to the route.
 #
 #   bash scripts/rhcl/api-product.sh          # create
 #   bash scripts/rhcl/api-product.sh delete   # remove
@@ -17,41 +17,13 @@ NS=parasol-insurance-prod
 D=$(oc get ingresses.config cluster -o jsonpath='{.spec.domain}')
 
 if [ "${1:-}" = "delete" ]; then
-  oc delete apiproduct/parasol-claims-api apiproduct/parasol-insurance-api planpolicy/parasol-api-plans -n $NS --ignore-not-found
-  echo "removed the API Product and the PlanPolicy"
+  oc delete apiproduct/parasol-claims-api apiproduct/parasol-insurance-api -n $NS --ignore-not-found
+  echo "removed the API Product"
   exit 0
 fi
 
 oc apply -f - <<EOF
-# Tiers a consumer can request from the portal. The identity's tier comes from the
-# secret.kuadrant.io/plan-id annotation the plugin stamps on the API key it creates.
-apiVersion: extensions.kuadrant.io/v1alpha1
-kind: PlanPolicy
-metadata:
-  name: parasol-api-plans
-  namespace: $NS
-spec:
-  targetRef:
-    group: gateway.networking.k8s.io
-    kind: HTTPRoute
-    name: parasol-api
-  plans:
-    - tier: gold
-      predicate: |
-        has(auth.identity) && auth.identity.metadata.annotations["secret.kuadrant.io/plan-id"] == "gold"
-      limits:
-        daily: 10000
-    - tier: silver
-      predicate: |
-        has(auth.identity) && auth.identity.metadata.annotations["secret.kuadrant.io/plan-id"] == "silver"
-      limits:
-        daily: 1000
-    - tier: bronze
-      predicate: |
-        has(auth.identity) && auth.identity.metadata.annotations["secret.kuadrant.io/plan-id"] == "bronze"
-      limits:
-        daily: 100
----
+# (the PlanPolicy with the gold/silver/bronze tiers is created by parasol-api.sh, on the route)
 apiVersion: devportal.kuadrant.io/v1alpha1
 kind: APIProduct
 metadata:
@@ -85,6 +57,5 @@ EOF
 
 sleep 10
 echo "== status"
-oc get planpolicy parasol-api-plans -n $NS -o custom-columns='PLANPOLICY:.metadata.name,ACCEPTED:.status.conditions[?(@.type=="Accepted")].status,ENFORCED:.status.conditions[?(@.type=="Enforced")].status'
 oc get apiproduct parasol-claims-api -n $NS -o custom-columns='APIPRODUCT:.metadata.name,PUBLISH:.spec.publishStatus,APPROVAL:.spec.approvalMode,ROUTE:.spec.targetRef.name'
 echo "Developer Hub: Connectivity Link -> API Products lists it; the catalog gets api:default/parasol-claims-api within a minute."

@@ -307,7 +307,12 @@ The request, the approval and the key are Kubernetes resources reconciled by Con
 curl -sk -o /dev/null -w 'HTTP %{http_code}\n' -H "Authorization: APIKEY <key from My API Keys>" {parasol_api_url}/api/claims
 ----
 +
-* `200`. "Same governed endpoint as Section 1, now with a key that this developer requested, that this owner approved, on a plan the platform enforces."
+* `200`. "Same governed endpoint as Section 1, now with a key that this developer requested and this owner approved. The tier travels with the key; the rate limit from Section 1 applies to it like to any consumer."
+
+[NOTE]
+====
+In this instance the per-plan daily limits are declared (`PlanPolicy`) but the route's `RateLimitPolicy` from Module 3 is the effective limiter: a route has one limiter and the explicit policy takes precedence. Present the plans as the contract the owner offers; the enforcement shown on stage is the 10 requests per 10 seconds from Section 1.
+====
 
 . Optional, in the OpenShift console as `{pe_user}`: **Connectivity Link → API Key Approvals** and **My API Keys** show the same objects, and `oc get apikeys,apikeyrequests,apikeyapprovals -A` lists the trail.
 
@@ -317,7 +322,7 @@ image::rhdh-api-products.png[Developer Hub Connectivity Link API Products page l
 
 * The API Product wraps the route and policies from Section 1; nothing was rebuilt for the portal
 * Request, approval and key are resources, so the audit trail is in the cluster, not in a mailbox
-* The plan (silver) is enforced by the gateway from the moment of approval; changing plans is an approval, not a configuration change
+* The plan (silver) travels with the key from the moment of approval; changing plans is an approval, not a configuration change
 * Developer Hub is the interface; Connectivity Link is the system of record
 
 **Business value callout:**

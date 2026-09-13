@@ -207,6 +207,17 @@ The `ocp4-adv-app-platform-demo` catalog item is provisioned as-is; this enablem
 curl -fsSL https://raw.githubusercontent.com/rhpds/openshift-advanced-platform-demo/main/scripts/post-provision.sh | bash
 ----
 
+To include the optional Connectivity Link and Developer Hub layers (about 20 minutes more), and when the lab is served from a fork, set the variables first:
+
+[source,bash,role="copypaste"]
+----
+export REPO_RAW=https://raw.githubusercontent.com/rhpds/openshift-advanced-platform-demo/main   # or your fork
+WITH_RHCL=1 WITH_RHDH_PLUGINS=1 bash <(curl -fsSL $REPO_RAW/scripts/post-provision.sh)
+WITH_RHCL=1 WITH_RHDH_PLUGINS=1 bash <(curl -fsSL $REPO_RAW/scripts/validate-instance.sh)
+----
+
+`validate-instance.sh` is read-only and prints PASS/FAIL for every layer; run it before the session on each instance.
+
 It takes about 2 minutes, or up to 8 minutes the first time when the `1.0` promotion pipeline has to run. It is idempotent, so re-running it is safe. What it fixes, and why:
 
 [cols="1,2,2",options="header"]

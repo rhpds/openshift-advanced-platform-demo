@@ -23,8 +23,8 @@ The instructor delivers Section 1 of the Advanced App Platform demo live, at the
 | 1 | Developer inner loop — Dev Spaces and MTA context | 5 min |
 | 2 | CI/CD pipeline — broken build and Roo Code AI fix | 7 min |
 | 3 | Argo CD GitOps delivery | 5 min |
-| 4 | Platform operations — Kiali, HPA, Vault external secrets | 8 min |
-| 5 | Q&A | ~5 min |
+| 4 | Platform operations — Kiali, Connectivity Link (optional layer), HPA, Vault external secrets | 10 min |
+| 5 | Q&A | ~3 min |
 
 ## Demo Flow (Section 1)
 
@@ -47,6 +47,9 @@ The instructor follows the standard demo script for the `ocp4-adv-app-platform-d
 
 6. **Platform operations — Kiali traffic graph**
    Show the live service mesh traffic graph. Talking point: "Platform teams get real-time observability of inter-service traffic without instrumenting individual applications."
+
+6b. **Connectivity Link — governed API entry point** *(only on instances prepared with the optional RHCL layer, see 02-details)*
+   Show the `parasol-gateway` gateway and the `parasol-api` HTTPRoute in the console, then three curls from the Web Terminal: 401 without an API key, 200 with the `partner1` key, 429 after ten calls in ten seconds. Talking point: "Who may call the API and how much is a platform policy in Git, not application code. The app and its route did not change."
 
 7. **HPA autoscaling** *(brief)*
    Show the Horizontal Pod Autoscaler responding to load. Talking point: "The platform scales to demand automatically — no 2am pager for a traffic spike."

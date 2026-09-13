@@ -46,6 +46,7 @@ Lab
 - Red Hat OpenShift Pipelines
 - Red Hat OpenShift GitOps
 - Red Hat OpenShift Service Mesh
+- Red Hat Connectivity Link (optional layer added post-provisioning; Module 3, Part 1b)
 - Red Hat Developer Hub
 - Red Hat Advanced Cluster Security for Kubernetes
 - Red Hat Trusted Artifact Signer

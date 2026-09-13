@@ -2,7 +2,7 @@
 include::partial$_attributes.adoc[]
 :imagesdir: ../assets/images
 
-*Presenter note*: This module shows how the platform handles cross-cutting operational concerns after the application is deployed in production. It covers Service Mesh for traffic management and security, OpenShift Observability, autoscaling with HPA, and external secrets management with Vault. Target duration: 20 minutes across 4 parts.
+*Presenter note*: This module shows how the platform handles cross-cutting operational concerns after the application is deployed in production. It covers Service Mesh for traffic management and security, Connectivity Link for governing the API at the edge, OpenShift Observability, autoscaling with HPA, and external secrets management with Vault. Target duration: 25 minutes across 5 parts (Part 1b adds about 5 minutes; skip it if the instance was not prepared with the Connectivity Link layer).
 
 [#part-1]
 == Part 1 — Traffic management and security with Service Mesh
@@ -81,6 +81,113 @@ A: "Services can be enrolled in the mesh incrementally. The platform team can st
 
 Q: "Can we do canary deployments with this?"::
 A: "Yes. Service Mesh supports traffic splitting, where you can route a percentage of traffic to a new version while the rest goes to the stable version. This is configured through the mesh, not in application code."
+
+'''
+
+[#part-1b]
+== Part 1b — Governing the API at the edge with Connectivity Link
+
+[NOTE]
+====
+**Instance preparation:** this part needs the Connectivity Link layer that the post-provisioning script adds on top of the demo (see xref:02-details.adoc#post-provisioning[Post-provisioning fix-ups]). If `parasol-api-{parasol_prod_ns}.{subdomain}` does not answer, run `scripts/rhcl/parasol-api.sh` from the Web Terminal first. The Parasol application and its own route are not modified by any of this.
+====
+
+=== Know
+
+_Service Mesh governs traffic **between** services. Red Hat Connectivity Link governs traffic **entering** the platform: who may call an API, how much, and through which hostname. It is the supported build of the Kuadrant project and extends the Kubernetes Gateway API with policies that the platform team attaches to a `Gateway` or an `HTTPRoute`: `AuthPolicy` (authentication and authorization, backed by Authorino), `RateLimitPolicy` (backed by Limitador), plus `DNSPolicy` and `TLSPolicy` for multi-cluster and certificates. The gateway itself is an Istio gateway, so it is the same data plane the mesh already runs._
+
+**Business challenge:**
+
+* Parasol exposes the claims API to partners and mobile apps through the same route as the web UI, with no way to identify or limit a consumer
+* Rate limiting and API keys live in application code, or in an external API gateway product that the platform team does not control
+* Each new integration means a change request, a redeploy, and a security review of code
+
+**Value proposition:**
+
+Connectivity Link turns API exposure into declarative platform resources. A `Gateway` and an `HTTPRoute` describe the entry point; an `AuthPolicy` and a `RateLimitPolicy` describe the rules. They are Kubernetes objects, so they travel through Git and Argo CD like everything else in this demo. The developers of the Parasol application did not change a line for it. Connectivity Link is not a full API management suite (no developer portal billing, no analytics product); it is the connectivity control layer of the platform, which is exactly what most customers are missing first.
+
+=== Show
+
+**What I say:**
+
+"Everything you just saw with Service Mesh is about traffic inside the platform. Now flip it around: a partner wants to call the Parasol claims API. Who are they, how many calls may they make, and where do we enforce that? Not in the application. Connectivity Link puts a governed front door in front of the API, and the platform team defines the rules as policy, not code."
+
+**What I do:**
+
+. In the **OpenShift web console**, logged in as `{pe_user}` / `{password}`, open **Networking → Gateways**:
+* Point out the six `waypoint` gateways (one per Parasol namespace). "Those are the mesh's own proxies for service-to-service traffic. They are the Istio ambient mode you just saw in Kiali."
+* Point out `parasol-gateway` in the `parasol-gateway` namespace, the only one of class `istio` with a hostname. "This one is the front door. Same Envoy technology, but facing outward."
+
+. Open **Networking → HTTPRoutes** and select `parasol-api` in `{parasol_prod_ns}`:
+* Show the hostname `parasol-api-{parasol_prod_ns}.{subdomain}`, the `/api` path match, and the backend `parasol-insurance:8080`.
+* "The route is a Kubernetes object owned by the platform team. Only `/api` is exposed through it; the web UI keeps its existing route untouched."
+
+. Open the **Connectivity Link** menu in the console (the policy topology view) and select the `parasol-gateway` gateway:
+* Show the two policies attached to the `parasol-api` route: `AuthPolicy` and `RateLimitPolicy`, both **Enforced**.
+* "Two policies. The first says who may call: an API key that the platform issues per consumer. The second says how much: ten requests every ten seconds per consumer. Neither policy touched the application."
+
+. Open the Web Terminal (`>_` icon) and show the policies enforcing. First without a key:
++
+[source,bash,role="copypaste",subs="attributes+"]
+----
+curl -sk -o /dev/null -w 'HTTP %{http_code}\n' {parasol_api_url}/api/claims
+----
++
+* "401. The gateway rejected the call before it ever reached Parasol."
+
+. Now as the partner `partner1`, whose key the platform team keeps as a Kubernetes secret (in a real deployment it would come from Vault through the External Secrets Operator, which is exactly what Part 4 shows):
++
+[source,bash,role="copypaste",subs="attributes+"]
+----
+KEY=$(oc get secret parasol-api-key-partner1 -n {parasol_prod_ns} -o jsonpath='{.data.api_key}' | base64 -d)
+curl -sk -o /dev/null -w 'HTTP %{http_code}\n' -H "Authorization: APIKEY $KEY" {parasol_api_url}/api/claims
+----
++
+* "200. Same endpoint, now with an identity attached to the call."
+
+. Show the rate limit with a burst of twelve calls:
++
+[source,bash,role="copypaste",subs="attributes+"]
+----
+for i in $(seq 1 12); do curl -sk -o /dev/null -w '%{http_code} ' -H "Authorization: APIKEY $KEY" {parasol_api_url}/api/claims; done; echo
+----
++
+* Point out the sequence: nine or ten `200`, then `429`.
+* "After the tenth call in ten seconds the gateway answers 429 Too Many Requests. The Parasol pods never saw those calls. The limit is per consumer, because the AuthPolicy handed the consumer identity to the rate limiter."
+
+. Back in the console, open the `RateLimitPolicy` YAML briefly:
+* Point out `limit: 10`, `window: 10s` and the counter `auth.identity.userid`.
+* "Changing the limit for a partner is a one-line change in Git. No redeploy, no code review of the application."
+
+// TODO: screenshot of Networking → Gateways with parasol-gateway highlighted
+// TODO: screenshot of the Connectivity Link policy topology for parasol-gateway
+// TODO: screenshot of the Web Terminal with the 401 / 200 / 429 sequence
+
+**What they should notice:**
+
+* API exposure is a set of Kubernetes objects: `Gateway`, `HTTPRoute`, `AuthPolicy`, `RateLimitPolicy`. They live in Git and are delivered by Argo CD like the application.
+* Authentication and rate limiting are enforced at the gateway, before the request reaches the application.
+* The limit is per consumer identity, not per IP, because the auth and rate-limit policies compose.
+* The application and its existing route did not change. This was added, not replaced.
+* The same Envoy data plane serves the mesh (waypoints) and the edge (gateway).
+
+**Business value callout:**
+
+"Parasol's partner integrations today take weeks because every new consumer means code changes in the API and a security review. With Connectivity Link the platform team issues a key, sets a limit, and commits two YAML files. The partner is live the same day, and the platform, not the application, guarantees that no single consumer can overload the claims service."
+
+**If asked:**
+
+Q: "Is this 3scale?"::
+A: "No. 3scale is a full API management product: developer portal, monetization, analytics. Connectivity Link is the Kubernetes-native connectivity layer: gateway, authentication, rate limiting, DNS and TLS as policies. Many customers need this layer first; the two can coexist, with 3scale handling the business side of API programs."
+
+Q: "Does the gateway need its own load balancer?"::
+A: "On cloud providers it gets one automatically. In this demo, which runs on OpenShift Virtualization without a load balancer service, the gateway sits behind a standard OpenShift Route. The policies work the same way in both cases."
+
+Q: "Can we use our corporate identity provider instead of API keys?"::
+A: "Yes. The same AuthPolicy accepts OIDC tokens from Keycloak or any OpenID Connect provider by changing the authentication block; the application is not involved. API keys are shown here because they are what partner integrations typically use."
+
+Q: "Does this work with the LLM in Section 3?"::
+A: "That is one of the most interesting uses. Connectivity Link has a token-based rate limit policy for LLM traffic, so the platform can cap how many tokens each team consumes from the model endpoint, and inject the real provider credential at the gateway so it never lives in the application."
 
 '''
 

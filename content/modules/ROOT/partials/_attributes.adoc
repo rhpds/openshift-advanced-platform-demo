@@ -41,6 +41,10 @@
 :parasol_dev_ns: parasol-insurance-dev
 :parasol_prod_ns: parasol-insurance-prod
 
+// Connectivity Link (Module 3, Part 1b) — governed API entry point added post-provisioning
+:parasol_api_url: https://parasol-api-parasol-insurance-prod.{openshift_cluster_ingress_domain}
+:rhcl_version: 1.4
+
 // Product versions — Section 1
 :ocp_version: 4.20
 :devspaces_version: 3.26

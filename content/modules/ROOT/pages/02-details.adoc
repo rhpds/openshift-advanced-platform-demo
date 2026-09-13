@@ -140,6 +140,17 @@ oc get secret openshift-gitops-cluster -n openshift-gitops -o jsonpath='{.data.a
 * Accessible through the **Service Mesh** top-level menu in the OpenShift console
 * Login to the OpenShift console as `{pe_user}` / `{password}` (platform engineer persona) or cluster admin
 
+=== Connectivity Link (Section 1, Part 1b — optional layer)
+
+* Gateways, HTTPRoutes and the **Connectivity Link** policy topology are in the OpenShift console under **Networking** and **Connectivity Link**; log in as `{pe_user}` / `{password}`
+* Governed API endpoint: {parasol_api_url}/api/claims[{parasol_api_url}/api/claims^] (answers `401` without a key)
+* API key of the `partner1` consumer (header `Authorization: APIKEY <key>`):
++
+[source,bash,role="copypaste",subs="attributes+"]
+----
+oc get secret parasol-api-key-partner1 -n {parasol_prod_ns} -o jsonpath='{.data.api_key}' | base64 -d
+----
+
 === Tekton pipelines
 
 * Accessible through the OpenShift console under **Pipelines** in the `{parasol_build_ns}` namespace (and their secured counterparts in section 2)
@@ -186,6 +197,7 @@ In Section 2, the application and all its components are registered in the Red H
 
 In Section 3, the application is extended with an AI-enhanced component that consumes the LLM endpoint and processes business data from Kafka.
 
+[#post-provisioning]
 == Post-provisioning fix-ups (run once per instance)
 
 The `ocp4-adv-app-platform-demo` catalog item is provisioned as-is; this enablement lab does not control its bootstrap. A few defects in the provisioned instance break the Section 2 flow for every group, so the instructor (or each group's driver during Module 2) runs one script from the OpenShift console **Web Terminal** (`>_` icon, top right) as cluster admin:
@@ -221,6 +233,8 @@ It takes about 2 minutes, or up to 8 minutes the first time when the `1.0` promo
 |See the warning below
 |Restarts db + app where the Parasol app is crash-looping, and restarts Developer Hub when its login is broken
 |===
+
+**Optional: Connectivity Link layer (Module 3, Part 1b).** The demo does not ship Red Hat Connectivity Link. Three additional scripts install it on top of the instance without touching the Parasol application: `scripts/rhcl/install.sh` (operator, control plane, console plugin), `scripts/rhcl/gateway.sh` (the `parasol-gateway` gateway of class `istio`, exposed through a Route) and `scripts/rhcl/parasol-api.sh` (the `parasol-api` HTTPRoute, the API-key `AuthPolicy`, the `RateLimitPolicy` and the `partner1` key). Run them in that order from the Web Terminal; each one verifies itself and has a `delete` mode. Skip Part 1b on instances without this layer.
 
 Two things the script cannot fix, because the Argo CD bootstrap would revert them: the **Image Registry** tab crashes on the components of the `ai-customer-service-platform` system (they have no image), and that system's owner `website-team` does not exist. Both come from a foreign catalog the demo loads; ignore those entities during the demo.
 

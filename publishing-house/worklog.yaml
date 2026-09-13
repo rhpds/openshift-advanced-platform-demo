@@ -2,4 +2,76 @@
 # Human context, decisions, and notes that bridge sessions and people.
 # Not a task tracker — the manifest tracks structured progress.
 
-entries: []
+entries:
+  - id: "2026-09-13-001"
+    timestamp: "2026-09-13T13:30:00Z"
+    author: "sandrotanaka"
+    status: open
+    type: decision
+    content: >-
+      This lab is an individual initiative: there is no working relationship with the
+      owner of the ocp4-adv-app-platform-demo catalog item, so nothing may depend on
+      changes to the upstream demo repos (redhat-ads-tech/ocp-app-platform-demo-*).
+      Every fix is layered on top of a provisioned instance via scripts/post-provision.sh
+      and documented in the Showroom. Upstream pull requests remain optional and are
+      not a dependency.
+
+  - id: "2026-09-13-002"
+    timestamp: "2026-09-13T13:30:00Z"
+    author: "sandrotanaka"
+    status: open
+    type: note
+    content: >-
+      Added scripts/post-provision.sh, an idempotent fix-up script run once per instance
+      from the console Web Terminal as cluster admin. It (1) switches the sonar-scan task
+      to the fully qualified sonar-maven-plugin goal in the RHDH template skeleton, the
+      build-deployer chart and any per-user gitops repo; (2) adds argocd/app-selector and
+      the correct Quay repository slug to the parasol-insurance components; (3) labels the
+      four Parasol Argo CD Applications for that selector; (4) creates git tag 1.0 on
+      parasol/parasol-insurance-secured so the promotion pipeline publishes the image that
+      values-prod.yaml already references (secured prod otherwise stays ImagePullBackOff);
+      (5) repairs restarted instances (Parasol db+app restart on HBONE loss, RHDH restart
+      when OIDC login is stuck); (6) refreshes the RHDH catalog and prints a health summary.
+      A "Post-provisioning fix-ups" section and an RHDH-restart note were added to
+      content/modules/ROOT/pages/02-details.adoc. Root causes were confirmed on the live
+      instance on 2026-09-11 and 2026-09-13.
+
+  - id: "2026-09-13-003"
+    timestamp: "2026-09-13T13:30:00Z"
+    author: "sandrotanaka"
+    status: open
+    type: action
+    content: >-
+      Run scripts/post-provision.sh end to end on a freshly provisioned instance (not one
+      already patched by hand) and time it; the 1.0 promotion step has only been reasoned
+      about, not executed from a clean state. Confirm the tag webhook fires from an
+      API-created tag and that no promotion MR is opened when values-prod.yaml already says
+      1.0. Then decide whether the instructor runs it on all 20 instances before the
+      session or each group's driver runs it during Module 2.
+
+  - id: "2026-09-13-004"
+    timestamp: "2026-09-13T13:30:00Z"
+    author: "sandrotanaka"
+    status: open
+    type: decision
+    content: >-
+      Red Hat Connectivity Link: proposal and strategy written (Claude artifact
+      "Connectivity Link no Parasol"). Given the individual-initiative constraint, RHCL
+      would be delivered as an extra Argo CD Application in openshift-gitops pointing at a
+      repo of our own (operator, gateway, AuthPolicy, RateLimitPolicy), added by the
+      post-provision script; the bootstrap app-of-apps does not prune Applications it did
+      not create. Pending: go/no-go, and a spike on Gateway API vs the existing OSSM 3.2
+      ambient install and on exposing the gateway through a Route on CNV.
+
+  - id: "2026-09-13-005"
+    timestamp: "2026-09-13T13:30:00Z"
+    author: "sandrotanaka"
+    status: open
+    type: note
+    content: >-
+      Known defects in the provisioned demo that the script cannot fix because the Argo CD
+      bootstrap reverts them (dynamic-plugins and app-config are selfHeal-managed): the
+      RHDH Image Registry tab crashes on components without a quay.io/repository-slug
+      annotation (the mount point condition should include hasAnnotation), and the demo
+      loads a foreign catalog (ai-customer-service-platform) whose owner group website-team
+      does not exist. Documented in 02-details as "ignore during the demo".

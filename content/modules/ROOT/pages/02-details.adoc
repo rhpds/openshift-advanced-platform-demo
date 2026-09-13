@@ -186,11 +186,58 @@ In Section 2, the application and all its components are registered in the Red H
 
 In Section 3, the application is extended with an AI-enhanced component that consumes the LLM endpoint and processes business data from Kafka.
 
+== Post-provisioning fix-ups (run once per instance)
+
+The `ocp4-adv-app-platform-demo` catalog item is provisioned as-is; this enablement lab does not control its bootstrap. A few defects in the provisioned instance break the Section 2 flow for every group, so the instructor (or each group's driver during Module 2) runs one script from the OpenShift console **Web Terminal** (`>_` icon, top right) as cluster admin:
+
+[source,bash,role="copypaste"]
+----
+curl -fsSL https://raw.githubusercontent.com/rhpds/openshift-advanced-platform-demo/main/scripts/post-provision.sh | bash
+----
+
+It takes about 2 minutes, or up to 8 minutes the first time when the `1.0` promotion pipeline has to run. It is idempotent, so re-running it is safe. What it fixes, and why:
+
+[cols="1,2,2",options="header"]
+|===
+|Fix |Symptom without it |What the script does
+
+|SonarQube scan task in the RHDH template
+|Every pipeline started from the "Parasol Insurance Secured Development" template fails at `sonar-scan` with `No plugin found for prefix 'sonar'` (Module 5)
+|Uses the fully qualified `sonar-maven-plugin` goal in the template skeleton, the `build-deployer` chart and any per-user gitops repo that already exists
+
+|Image `1.0` for secured prod
+|`parasol-insurance-secured-prod` stays `ImagePullBackOff` (Degraded in Argo CD and in the RHDH CD tab) until someone completes the Module 5 promotion
+|Creates git tag `1.0` on `parasol/parasol-insurance-secured`, which runs the signed and attested promotion pipeline for the tag `values-prod.yaml` already references
+
+|CD tab on the Parasol components
+|`parasol-insurance` and `parasol-insurance-secured` have no CD tab in Developer Hub; only the per-user components do
+|Adds `argocd/app-selector` to the components and labels the four Argo CD Applications so dev and prod both appear
+
+|Quay repository of the secured component
+|The Image Registry tab of `parasol-insurance-secured` shows the foundational repo's images
+|Points `quay.io/repository-slug` at `parasol/parasol-insurance-secured`
+
+|Restarted-instance repairs
+|See the warning below
+|Restarts db + app where the Parasol app is crash-looping, and restarts Developer Hub when its login is broken
+|===
+
+Two things the script cannot fix, because the Argo CD bootstrap would revert them: the **Image Registry** tab crashes on the components of the `ai-customer-service-platform` system (they have no image), and that system's owner `website-team` does not exist. Both come from a foreign catalog the demo loads; ignore those entities during the demo.
+
 == Pre-demo checklist
 
 [WARNING]
 ====
-**Resurrected clusters:** If you stopped a running demo cluster and later restarted it, the Istio ambient service mesh may fail to re-establish `HBONE` tunnels to existing pods. This causes the Parasol application to fail to connect to its PostgreSQL database, and pipelines that attempt to restart the application will fail. If you encounter this, restart the database and application pods in the affected namespaces by running the following commands in the OpenShift console terminal:
+**Resurrected clusters:** If you stopped a running demo cluster and later restarted it, two things can break. The `post-provision.sh` script above repairs both; the manual steps follow.
+
+**Developer Hub login fails with an error 500.** The RHDH pod usually starts before Keycloak and the ingress VIP are back, and its OIDC discovery stays stuck even after they recover. Restart it:
+
+[source,bash,role="copypaste"]
+----
+oc rollout restart deployment/backstage-developer-hub -n rhdh
+----
+
+**Parasol application pods crash-loop.** The Istio ambient service mesh may fail to re-establish `HBONE` tunnels to existing pods. This causes the Parasol application to fail to connect to its PostgreSQL database, and pipelines that attempt to restart the application will fail. If you encounter this, restart the database and application pods in the affected namespaces by running the following commands in the OpenShift console terminal:
 
 [source,bash,role="copypaste"]
 ----

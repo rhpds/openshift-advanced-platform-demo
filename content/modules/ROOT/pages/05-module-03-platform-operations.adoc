@@ -159,9 +159,11 @@ for i in $(seq 1 12); do curl -sk -o /dev/null -w '%{http_code} ' -H "Authorizat
 * Point out `limit: 10`, `window: 10s` and the counter `auth.identity.userid`.
 * "Changing the limit for a partner is a one-line change in Git. No redeploy, no code review of the application."
 
-// TODO: screenshot of Networking → Gateways with parasol-gateway highlighted
-// TODO: screenshot of the Connectivity Link policy topology for parasol-gateway
-// TODO: screenshot of the Web Terminal with the 401 / 200 / 429 sequence
+image::rhcl-gateways.png[OpenShift console Networking → Gateways listing parasol-gateway (class istio) next to the six waypoint gateways of the Parasol namespaces,link=self,window=blank,align="center",width=700,title="Gateways: the front door (parasol-gateway) and the mesh waypoints"]
+
+image::rhcl-policy-topology.png[Connectivity Link policy topology showing the Kuadrant control plane, the parasol-gateway and the parasol-api HTTPRoute with its attached policies,link=self,window=blank,align="center",width=700,title="Connectivity Link policy topology for the Parasol API"]
+
+image::rhcl-policies.png[Connectivity Link policies list for parasol-insurance-prod showing the AuthPolicy and RateLimitPolicy attached to the parasol-api route as Enforced,link=self,window=blank,align="center",width=700,title="AuthPolicy and RateLimitPolicy enforced on the parasol-api route"]
 
 **What they should notice:**
 

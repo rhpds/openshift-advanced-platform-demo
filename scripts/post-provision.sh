@@ -22,6 +22,11 @@
 #   6. Refresh the RHDH catalog and print a health summary.
 #
 # Env overrides: SKIP_TAG=1 skips step 4. DRY_RUN=1 prints what would change.
+#   WITH_RHCL=1          also install Red Hat Connectivity Link, the parasol gateway, the
+#                        governed API entry point and the API Product (Module 3 Part 1b)
+#   WITH_RHDH_PLUGINS=1  also enable the Kuadrant Developer Hub plugins + RBAC (needs WITH_RHCL)
+#   REPO_RAW=<url>       where to fetch the sibling scripts from when run via curl | bash
+#                        (default: this repository on GitHub, branch main)
 
 set -euo pipefail
 
@@ -182,6 +187,36 @@ if [ -n "$POD" ] && [ "${DRY_RUN:-0}" != "1" ]; then
       curl -s -o /dev/null -X POST -H "Authorization: Bearer $BACKEND_SECRET" -H "Content-Type: application/json" \
         http://localhost:7007/api/catalog/refresh -d "{\"entityRef\":\"$e\"}"
     done' 2>/dev/null && ok "refresh requested (takes up to a minute)"
+fi
+
+# ---------------------------------------------------------------------------
+# Optional layers: Connectivity Link and the Developer Hub Kuadrant plugins. The sibling
+# scripts live in scripts/ of this repository; when this file was piped from curl they are
+# fetched from REPO_RAW.
+REPO_RAW=${REPO_RAW:-https://raw.githubusercontent.com/rhpds/openshift-advanced-platform-demo/main}
+fetch_scripts() {
+  SCRIPTS_DIR=$(cd "$(dirname "${BASH_SOURCE[0]:-x}")" 2>/dev/null && pwd || true)
+  if [ -n "$SCRIPTS_DIR" ] && [ -f "$SCRIPTS_DIR/rhcl/install.sh" ]; then return; fi
+  SCRIPTS_DIR=$(mktemp -d)/scripts; mkdir -p "$SCRIPTS_DIR/rhcl" "$SCRIPTS_DIR/rhdh-kuadrant"
+  for f in rhcl/install.sh rhcl/gateway.sh rhcl/parasol-api.sh rhcl/api-product.sh \
+           rhdh-kuadrant/apply.sh rhdh-kuadrant/db-pool.sh rhdh-kuadrant/rollback.sh \
+           rhdh-kuadrant/dynamic-plugins.fragment.yaml rhdh-kuadrant/app-config.fragment.yaml rhdh-kuadrant/rbac-policy.fragment.csv; do
+    curl -fsSL "$REPO_RAW/scripts/$f" -o "$SCRIPTS_DIR/$f"
+  done
+}
+if [ "${WITH_RHCL:-0}" = "1" ]; then
+  log "7. Connectivity Link layer (operator, gateway, governed Parasol API, API Product)"
+  fetch_scripts
+  run bash "$SCRIPTS_DIR/rhcl/install.sh"
+  run bash "$SCRIPTS_DIR/rhcl/gateway.sh"
+  run bash "$SCRIPTS_DIR/rhcl/parasol-api.sh"
+  run bash "$SCRIPTS_DIR/rhcl/api-product.sh"
+fi
+if [ "${WITH_RHDH_PLUGINS:-0}" = "1" ]; then
+  log "8. Developer Hub: Kuadrant plugins + RBAC (restarts Developer Hub twice, ~8 min)"
+  fetch_scripts
+  run bash "$SCRIPTS_DIR/rhdh-kuadrant/apply.sh"
+  run bash "$SCRIPTS_DIR/rhdh-kuadrant/db-pool.sh"
 fi
 
 # ---------------------------------------------------------------------------

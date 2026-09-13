@@ -157,3 +157,22 @@ entries:
       the API Product / key-request flow becomes a Module 4 beat. Both change the demo
       roteiro and need timing in the 2-hour session.
 
+  - id: "2026-09-13-011"
+    timestamp: "2026-09-13T20:20:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-13T20:20:00Z"
+    resolved_by: "sandrotanaka"
+    type: note
+    content: >-
+      Security review of llm-gateway.sh (automated) flagged a provider key literal in the
+      HTTPRoute (readable in the console and by the RHDH Kuadrant plugin) and an over-broad
+      authorization scope (allNamespaces API keys, allowedRoutes from All). Fixed and
+      re-verified (401 / 200 / 429): platform key sent in X-Platform-Key, key Secrets kept in
+      kuadrant-system (admin-only) with the provider key as a field, Authorino injects the
+      upstream Authorization from auth.identity.data with @base64:decode, no allNamespaces;
+      gateway listener only accepts routes from namespaces labelled
+      parasol.rhdp.io/gateway-access=true (gateway.sh labels parasol-insurance-prod).
+      Known remaining trade-off: parasol-api.sh keeps allNamespaces: true because the
+      Developer Hub key-request flow creates key Secrets outside kuadrant-system.
+

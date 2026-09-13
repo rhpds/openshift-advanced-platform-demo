@@ -48,7 +48,11 @@ spec:
       hostname: "*.${D}"
       allowedRoutes:
         namespaces:
-          from: All
+          # only namespaces the platform team labels may attach routes to the front door
+          from: Selector
+          selector:
+            matchLabels:
+              parasol.rhdp.io/gateway-access: "true"
 ---
 apiVersion: route.openshift.io/v1
 kind: Route
@@ -66,6 +70,9 @@ spec:
     termination: edge
     insecureEdgeTerminationPolicy: Redirect
 EOF
+
+# namespaces allowed to attach routes: the gateway's own (LLM route) and Parasol prod
+oc label namespace $NS parasol-insurance-prod parasol.rhdp.io/gateway-access=true --overwrite >/dev/null
 
 echo "waiting for Istio to program the gateway..."
 for i in $(seq 1 24); do

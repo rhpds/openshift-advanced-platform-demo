@@ -148,7 +148,7 @@ oc get secret openshift-gitops-cluster -n openshift-gitops -o jsonpath='{.data.a
 +
 [source,bash,role="copypaste",subs="attributes+"]
 ----
-oc get secret parasol-api-key-partner1 -n {parasol_prod_ns} -o jsonpath='{.data.api_key}' | base64 -d
+oc get secret parasol-api-key-partner1 -n kuadrant-system -o jsonpath='{.data.api_key}' | base64 -d
 ----
 
 === Tekton pipelines

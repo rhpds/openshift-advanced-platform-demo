@@ -135,11 +135,11 @@ curl -sk -o /dev/null -w 'HTTP %{http_code}\n' {parasol_api_url}/api/claims
 +
 * "401. The gateway rejected the call before it ever reached Parasol."
 
-. Now as the partner `partner1`, whose key the platform team keeps as a Kubernetes secret (in a real deployment it would come from Vault through the External Secrets Operator, which is exactly what Part 4 shows):
+. Now as the partner `partner1`, whose key the platform team keeps as a Kubernetes secret in the Connectivity Link namespace, where only cluster admins can write (in a real deployment it would be synced there from Vault through the External Secrets Operator, which is exactly what Part 4 shows):
 +
 [source,bash,role="copypaste",subs="attributes+"]
 ----
-KEY=$(oc get secret parasol-api-key-partner1 -n {parasol_prod_ns} -o jsonpath='{.data.api_key}' | base64 -d)
+KEY=$(oc get secret parasol-api-key-partner1 -n kuadrant-system -o jsonpath='{.data.api_key}' | base64 -d)
 curl -sk -o /dev/null -w 'HTTP %{http_code}\n' -H "Authorization: APIKEY $KEY" {parasol_api_url}/api/claims
 ----
 +

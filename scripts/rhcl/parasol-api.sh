@@ -9,24 +9,27 @@
 set -euo pipefail
 NS=parasol-insurance-prod
 GWNS=parasol-gateway
+KEYNS=kuadrant-system   # where Authorino looks for API keys; the developer-portal controller puts approved keys here too
 D=$(oc get ingresses.config cluster -o jsonpath='{.spec.domain}')
 HOST="parasol-api-${NS}.${D}"
 
 if [ "${1:-}" = "delete" ]; then
   oc delete ratelimitpolicy/parasol-api authpolicy/parasol-api httproute/parasol-api -n $NS --ignore-not-found
-  oc delete secret parasol-api-key-partner1 -n $NS --ignore-not-found
+  oc delete secret parasol-api-key-partner1 -n $KEYNS --ignore-not-found
   oc delete route parasol-api -n $GWNS --ignore-not-found
   echo "removed the parasol-api HTTPRoute, policies, API key and Route"
   exit 0
 fi
 
-# API key for the "partner1" consumer. Generated once; read it back with:
-#   oc get secret parasol-api-key-partner1 -n parasol-insurance-prod -o jsonpath='{.data.api_key}' | base64 -d
-if ! oc get secret parasol-api-key-partner1 -n $NS >/dev/null 2>&1; then
+# API key for the "partner1" consumer, kept in Authorino's namespace (cluster-admin only), which
+# is also where the developer-portal controller copies keys approved through Developer Hub.
+# Read it back with:
+#   oc get secret parasol-api-key-partner1 -n kuadrant-system -o jsonpath='{.data.api_key}' | base64 -d
+if ! oc get secret parasol-api-key-partner1 -n $KEYNS >/dev/null 2>&1; then
   KEY=$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32)
-  oc create secret generic parasol-api-key-partner1 -n $NS --from-literal=api_key="$KEY" >/dev/null
-  oc label secret parasol-api-key-partner1 -n $NS authorino.kuadrant.io/managed-by=authorino app=parasol-api --overwrite >/dev/null
-  oc annotate secret parasol-api-key-partner1 -n $NS secret.kuadrant.io/user-id=partner1 --overwrite >/dev/null
+  oc create secret generic parasol-api-key-partner1 -n $KEYNS --from-literal=api_key="$KEY" >/dev/null
+  oc label secret parasol-api-key-partner1 -n $KEYNS authorino.kuadrant.io/managed-by=authorino app=parasol-api --overwrite >/dev/null
+  oc annotate secret parasol-api-key-partner1 -n $KEYNS secret.kuadrant.io/user-id=partner1 --overwrite >/dev/null
 fi
 
 oc apply -f - <<EOF
@@ -86,9 +89,9 @@ spec:
           selector:
             matchLabels:
               app: parasol-api
-          # Authorino runs in kuadrant-system; without this it only looks for
-          # Secrets there and every key is rejected with 401
-          allNamespaces: true
+          # keys live only in kuadrant-system (partner keys from this script, portal keys copied
+          # there by the developer-portal controller), so no allNamespaces: a labelled Secret in
+          # another namespace cannot mint a key
         credentials:
           authorizationHeader:
             prefix: APIKEY
@@ -132,7 +135,7 @@ echo "== status"
 oc get httproute parasol-api -n $NS -o custom-columns='HTTPROUTE:.metadata.name,ACCEPTED:.status.parents[0].conditions[?(@.type=="Accepted")].status,RESOLVED:.status.parents[0].conditions[?(@.type=="ResolvedRefs")].status'
 oc get authpolicy,ratelimitpolicy parasol-api -n $NS -o custom-columns='KIND:.kind,ACCEPTED:.status.conditions[?(@.type=="Accepted")].status,ENFORCED:.status.conditions[?(@.type=="Enforced")].status,MSG:.status.conditions[?(@.type=="Enforced")].message'
 
-KEY=$(oc get secret parasol-api-key-partner1 -n $NS -o jsonpath='{.data.api_key}' | base64 -d)
+KEY=$(oc get secret parasol-api-key-partner1 -n $KEYNS -o jsonpath='{.data.api_key}' | base64 -d)
 # the gateway's Envoy reloads to load the Kuadrant wasm filter; 502/503 until it is done
 echo "waiting for the gateway to reload with the policies..."
 for i in $(seq 1 24); do

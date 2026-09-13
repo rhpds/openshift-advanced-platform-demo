@@ -49,7 +49,12 @@ kind: Kuadrant
 metadata:
   name: kuadrant
   namespace: $NS
-spec: {}
+spec:
+  components:
+    # developer portal controller: APIProduct / APIKey / APIKeyRequest / APIKeyApproval,
+    # required by the Developer Hub Kuadrant plugin's key-request flow
+    developerPortal:
+      enabled: true
 EOF
 for i in $(seq 1 30); do
   [ "$(oc get kuadrant kuadrant -n $NS -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null)" = "True" ] && { echo "   Kuadrant Ready"; break; }

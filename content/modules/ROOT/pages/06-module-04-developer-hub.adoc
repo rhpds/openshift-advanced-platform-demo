@@ -257,6 +257,84 @@ A: "Yes. Templates are the golden path. They include the organization's approved
 Q: "What happens to the environment when the feature is done?"::
 A: "The development environment can be cleaned up through the catalog. The platform team can also configure automatic cleanup policies. The branch and its associated resources are removed when no longer needed."
 
+[#part-4]
+== Part 4 — API products and self-service API keys
+
+[NOTE]
+====
+**Instance preparation:** this part needs the Connectivity Link layer and the Kuadrant Developer Hub plugins (see xref:02-details.adoc#post-provisioning[Post-provisioning fix-ups]). `scripts/rhcl/api-product.sh` publishes the claims API as an API Product. Skip this part on instances without the layer; the module still works without it.
+====
+
+=== Know
+
+_Part 2 showed the catalog telling developers which APIs exist. Connectivity Link adds the next question: how do I get access? An **API Product** is a Connectivity Link resource that wraps an `HTTPRoute` (the claims API from Section 1) with plans (gold, silver, bronze, each with its own daily budget), documentation and an owner. It appears in Developer Hub as a catalog entity and in the **Connectivity Link** menu, where a developer requests a key for a plan, the API owner approves it, and the platform issues the key and enforces the plan. No ticket, no e-mail, no shared credential._
+
+**Business challenge:**
+
+* Getting an API key at Parasol means a ticket to the API team and a credential pasted into a chat
+* Nobody knows which consumer holds which key, or which plan they are on
+* Revoking or downgrading a consumer means touching gateway configuration by hand
+
+**Value proposition:**
+
+The request, the approval and the key are Kubernetes resources reconciled by Connectivity Link; Developer Hub is the user interface on top. The developer self-serves, the owner keeps the approval gate, and the platform enforces the plan at the gateway the moment the key is approved. The audit trail is the resources themselves.
+
+=== Show
+
+**What I say:**
+
+"You found the claims API in the catalog. Now you need a key. In most companies that is a ticket and a week. Here it is a form, an approval and a policy."
+
+**What I do:**
+
+. As `{dev_user}`, open **Connectivity Link → API Products** in the left sidebar:
+* Show **Parasol Insurance Claims API**, version v1, route `parasol-api`, policy `parasol-api-plans`, tags `parasol`, `claims`, `insurance`.
+* Click it: the Overview shows owner (`devteam1`), documentation and the **Policies** tab with the AuthPolicy, RateLimitPolicy and PlanPolicy attached to the route.
+* "This is the same route and the same policies the platform engineer showed in Section 1. Here they are published as a product a developer can consume."
+
+. Open **Connectivity Link → My API Keys** and click **Request Access**:
+* API: **Parasol Insurance Claims API**; Tier: **silver** (1,000 requests per day); use case: a sentence; accept the terms; **Request**.
+* "The developer chose a plan. Behind the form, Developer Hub created an `APIKey` resource in a namespace that belongs to this developer, and the platform turned it into a pending request for the API owner."
+
+. Switch to `{pe_user}` and open **Connectivity Link → API Key Approval**:
+* Show the pending request: product, tier, requester, use case.
+* Click **Approve**. "The owner keeps the gate. Approval creates an `APIKeyApproval` resource; Connectivity Link activates the key against the route's AuthPolicy and applies the silver plan."
+
+. Back as `{dev_user}`, refresh **My API Keys**: the key is **Active**. Copy it and call the API from the Web Terminal:
++
+[source,bash,role="copypaste",subs="attributes+"]
+----
+curl -sk -o /dev/null -w 'HTTP %{http_code}\n' -H "Authorization: APIKEY <key from My API Keys>" {parasol_api_url}/api/claims
+----
++
+* `200`. "Same governed endpoint as Section 1, now with a key that this developer requested, that this owner approved, on a plan the platform enforces."
+
+. Optional, in the OpenShift console as `{pe_user}`: **Connectivity Link → API Key Approvals** and **My API Keys** show the same objects, and `oc get apikeys,apikeyrequests,apikeyapprovals -A` lists the trail.
+
+image::rhdh-api-products.png[Developer Hub Connectivity Link API Products page listing the Parasol Insurance Claims API with its route, policy and tags,link=self,window=blank,align="center",width=700,title="The claims API published as an API Product in Developer Hub"]
+
+**What they should notice:**
+
+* The API Product wraps the route and policies from Section 1; nothing was rebuilt for the portal
+* Request, approval and key are resources, so the audit trail is in the cluster, not in a mailbox
+* The plan (silver) is enforced by the gateway from the moment of approval; changing plans is an approval, not a configuration change
+* Developer Hub is the interface; Connectivity Link is the system of record
+
+**Business value callout:**
+
+"Parasol's partner onboarding takes a week because a human has to hand out a credential and configure the gateway. With API Products, the partner requests, the owner approves in Developer Hub, and the platform does the rest, in minutes, with a trail. The API team stops being the bottleneck and keeps the control."
+
+**If asked:**
+
+Q: "Can approval be automatic for some plans?"::
+A: "Yes. The API Product has an approval mode; `auto` issues the key immediately for products where the owner does not need to review. Manual approval is shown here because it is the case most customers ask about."
+
+Q: "Where does the key live?"::
+A: "In a Kubernetes Secret in a namespace owned by the requesting developer, created by Developer Hub. The gateway's AuthPolicy reads keys from those namespaces. Revoking is deleting the resource."
+
+Q: "How is this different from 3scale's developer portal?"::
+A: "3scale offers a full public developer portal with monetization and analytics. This is the Kubernetes-native version for internal and partner consumers: the same resources the platform team already manages, surfaced in the developer portal the organization already runs."
+
 [#summary]
 == Module 4 summary
 

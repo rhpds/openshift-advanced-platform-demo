@@ -19,6 +19,9 @@ p, role:default/api-admin, kuadrant.apikey.read.all, read, allow
 p, role:default/api-admin, kuadrant.apikey.update.all, update, allow
 p, role:default/api-admin, kuadrant.apikey.delete.all, delete, allow
 p, role:default/api-admin, kuadrant.apikey.approve, update, allow
+p, role:default/api-admin, kuadrant.apikey.read.own, read, allow
+p, role:default/api-admin, kuadrant.apikey.update.own, update, allow
+p, role:default/api-admin, kuadrant.apikey.delete.own, delete, allow
 p, role:default/api-admin, policy.entity.read, read, allow
 p, role:default/api-admin, policy.entity.create, create, allow
 p, role:default/api-admin, policy.entity.update, update, allow

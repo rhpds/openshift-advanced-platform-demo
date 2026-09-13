@@ -21,6 +21,9 @@ export default async function run(page, ui) {
   await popup.fill('#password', pass)
   await Promise.all([popup.waitForEvent('close', { timeout: 30000 }).catch(() => {}), popup.click('#kc-login')])
   await page.waitForTimeout(4000)
+  await page.waitForFunction(() => document.body.innerText.trim().length > 100, null, { timeout: 40000 }).catch(() => {})
+  const afterLogin = await page.evaluate(() => document.body.innerText.slice(0, 300))
+  const signedIn = !/sign in/i.test(afterLogin)
 
   const pages = [
     ['home', '/'],
@@ -47,8 +50,10 @@ export default async function run(page, ui) {
   for (const [name, path] of pages) {
     denied.length = 0
     try {
-      await page.goto(base + path, { waitUntil: 'domcontentloaded', timeout: 45000 })
-      await page.waitForTimeout(5000)
+      await page.goto(base + path, { waitUntil: 'load', timeout: 60000 })
+      // client-rendered app: wait for real content, not a fixed delay
+      await page.waitForFunction(() => document.body.innerText.trim().length > 100, null, { timeout: 40000 }).catch(() => {})
+      await page.waitForTimeout(2500)
       const text = await page.evaluate(() => document.body.innerText)
       const hits = [...new Set((text.match(new RegExp(bad.source, 'gi')) || []).map(s => s.toLowerCase()))]
       const heading = (text.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 3)).join(' | ').slice(0, 120)
@@ -58,5 +63,5 @@ export default async function run(page, ui) {
     }
   }
   const sidebar = await page.evaluate(() => [...document.querySelectorAll('nav a, [data-testid*="sidebar"] a')].map(a => a.textContent.trim()).filter(Boolean).slice(0, 40))
-  return { user, sidebar: [...new Set(sidebar)], results }
+  return { user, signedIn, afterLogin, sidebar: [...new Set(sidebar)], results }
 }

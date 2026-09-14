@@ -1,3 +1,5 @@
+> Superseded: os roteiros definitivos de gravação estão em `recording-takes.md` (takes T01 a T09c e A01 a A03). Este arquivo fica como histórico dos atos.
+
 # Atos da gravação: roteiros individuais para o Cowork
 
 Cada ato é autocontido: tem pré-condição, persona, passos com URL direta, critério de "pronto" e contingência. Grave um ato por vez; a troca de persona (Sign out → Sign In) acontece fora da gravação, feita por você. Cole no Cowork apenas o bloco **Prompt** do ato.

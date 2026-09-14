@@ -21,6 +21,10 @@ Duração estimada: **35 min** (ação + fala). Ensaiar com cronômetro antes de
 
 Chaves: `oc get secret platform-key-demo -n kuadrant-system -o jsonpath='{.data.api_key}' | base64 -d`. Nunca mostrar na tela.
 
+## Gravação em atos
+
+A gravação é feita em quatro atos independentes, um por sessão de persona, executados pelo Cowork; os prompts e os resets estão em `webinar/cowork-prompts.md`. Ato 1: tanaka-dev (etapas 1 a 5a). Ato 2: tanaka-pe (aprovação). Ato 3: tanaka-dev (chave e limite). Ato 4: tanaka-pe (agente cria o Golden Path). Sign out/Sign In entre atos, fora da gravação; validado que o Sign out do RHDH encerra a sessão SSO do Keycloak.
+
 ## Etapas
 
 ### 0. Abertura (2 min, fala)

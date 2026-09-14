@@ -39,7 +39,7 @@ Você vai executar uma demonstração gravada no Red Hat Developer Hub (RHDH) co
    Clique em "Review". Pause 3 segundos. Clique em "Create".
    Aguarde os cinco passos ficarem verdes (cerca de 15 segundos). Pause 3 segundos. Clique em "Open in catalog" e pause 5 segundos na página do novo componente (parasol-insurance-secured-tanaka-dev-claims-ai).
 
-4. Na página do componente, em "Links", clique em "View Source" (abre o GitLab na branch claims-ai). Aguarde 60 segundos nessa página (a plataforma ainda está criando a pipeline da branch). Depois clique em "+" → "New file", nome do arquivo: docs/claims-ai.md, conteúdo: "# Claims AI\n\nPrimeira alteração da feature." e confirme o commit na branch claims-ai (botão "Commit changes"). Se o GitLab pedir login, pare e me avise.
+4. Na página do componente, em "Links", clique em "View Source" (abre o GitLab na branch claims-ai). Aguarde 60 segundos nessa página (a plataforma ainda está criando a pipeline da branch). Depois clique em "Add to tree" (botão "+") → "New file", nome do arquivo: docs/claims-ai.md, conteúdo: "# Claims AI\n\nPrimeira alteração da feature." e confirme o commit na branch claims-ai (botão "Commit changes"). Se o GitLab pedir login, pare e me avise.
 
 5. Volte para https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/catalog/default/component/parasol-insurance-secured-tanaka-dev-claims-ai/ci
    Aguarde até 40 segundos e recarregue uma vez: deve aparecer um Pipeline Run em execução. Pause 5 segundos.
@@ -154,10 +154,83 @@ ou pelo terminal com o comando de registro do `webinar/roteiro.md`. Depois da gr
 
 ---
 
+## Ato 5 · Kafka: um segundo Golden Path, com aprovação por merge request
+
+Substitui a governança via Connectivity Link (Atos 1b passo 2, 2 e 3) quando o público não conhece RHCL; esses três ficam como alternativa. Três takes: dev pede, PE aprova, dev usa e observa.
+
+### Ato 5a · Tanaka Developer pede um tópico Kafka
+
+**Pré-condição**: sessão do Ato 1b (Tanaka Developer). O tópico `claims-ai-intake` não existe (reset abaixo). Duração alvo: 3 min.
+
+**Prompt**
+
+```
+Você continua como Tanaka Developer no Red Hat Developer Hub. Nunca clique em "Sign In" ou "Sign out". Confirme "Tanaka Developer" no canto superior direito.
+
+1. Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/create/templates/default/request-kafka-topic
+   Aguarde o formulário carregar (até 15 segundos). Preencha:
+   - Topic Name: claims-ai-intake
+   - Owning Team: clique no campo, digite devteam1 e escolha a opção "devteam1" na lista
+   - Partitions: 3
+   - Retention: deixe "Infinite"
+   - Description: Emails de sinistro da feature claims-ai
+   Clique em "Review", pause 3 segundos, clique em "Create". Aguarde os dois passos ficarem verdes (cerca de 10 segundos).
+2. Clique no link "Merge Request" que aparece ao final. Na página do GitLab, pause 5 segundos na descrição do MR e abra a aba "Changes"; pause 5 segundos sobre os dois arquivos (o KafkaTopic e o registro no catálogo). Não faça merge.
+
+Ao terminar, diga "Ato 5a concluído" e informe a URL do merge request.
+```
+
+**Pronto quando**: MR aberto em `rhdh/infra-app-of-apps` com dois arquivos. **Contingência**: formulário sem a opção devteam1 → digitar `group:default/devteam1`; GitLab pedindo login → você faz login como tanaka-dev fora da gravação.
+
+### Ato 5b · Tanaka Platform Engineer aprova o tópico
+
+**Pré-condição**: Sign out, Sign In como **Tanaka Platform Engineer**; GitLab logado como `tanaka-pe`. Duração alvo: 3 min (mais 1 a 3 min de espera do Argo CD, cortada na edição).
+
+**Prompt**
+
+```
+Você é a engenheira de plataforma Tanaka Platform Engineer. Nunca clique em "Sign In" ou "Sign out".
+
+1. Abra https://gitlab-gitlab.apps.cluster-ql7cw.dyn.redhatworkshops.io/rhdh/infra-app-of-apps/-/merge_requests e clique no merge request "Request Kafka Topic: claims-ai-intake". Abra a aba "Changes", pause 5 segundos, volte para "Overview" e clique em "Merge". Confirme se for pedido.
+2. Abra https://streams-console.apps.cluster-ql7cw.dyn.redhatworkshops.io/ e, se aparecer "Click to login anonymously", clique. Vá em "Topics". Recarregue a página a cada 30 segundos até o tópico "claims-ai-intake" aparecer (até 3 minutos). Pause 5 segundos sobre ele.
+3. Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/catalog?filters%5Bkind%5D=resource e localize "kafka-topic-claims-ai-intake". Clique nele e pause 5 segundos (dono devteam1, tipo kafka-topic, depende de kafka-cluster).
+
+Ao terminar, diga "Ato 5b concluído".
+```
+
+**Pronto quando**: tópico no Streams console e no catálogo. **Contingência**: tópico não aparece em 3 min → `oc annotate application.argoproj.io infra-kafka-topics -n openshift-gitops argocd.argoproj.io/refresh=normal --overwrite` (força o Argo); catálogo sem o Resource → esperar 2 min (processamento do catálogo).
+
+### Ato 5c · Tanaka Developer liga a feature ao tópico e vê as mensagens
+
+**Pré-condição**: Sign out, Sign In como **Tanaka Developer**; GitLab logado como `tanaka-dev`. Duração alvo: 5 min (mais 1 a 2 min de rollout, cortado).
+
+**Prompt**
+
+```
+Você é Tanaka Developer. Nunca clique em "Sign In" ou "Sign out".
+
+1. Abra https://gitlab-gitlab.apps.cluster-ql7cw.dyn.redhatworkshops.io/tanaka-dev/parasol-insurance-secured-claims-ai-gitops/-/blob/main/helm/templates/deployment.yaml e clique em "Edit" → "Edit single file". Logo acima da linha "- name: DEV_KAFKA_PASSWORD" insira duas linhas com a mesma indentação:
+            - name: KAFKA_TOPIC
+              value: claims-ai-intake
+   Mensagem do commit: "feature consome e produz no tópico claims-ai-intake". Clique em "Commit changes" (na branch main).
+2. Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/catalog/default/component/parasol-insurance-secured-tanaka-dev-claims-ai/cd
+   Recarregue a cada 30 segundos até a aplicação mostrar "Synced" e "Healthy" com o novo commit (até 3 minutos). Pause 3 segundos.
+3. Abra https://streams-console.apps.cluster-ql7cw.dyn.redhatworkshops.io/ (login anônimo se pedido) → "Topics" → "claims-ai-intake" → "Messages". Recarregue a cada 30 segundos até aparecerem mensagens (emails de sinistro em JSON; a aplicação publica um a cada 45 segundos). Pause 8 segundos sobre as mensagens.
+
+Ao terminar, diga "Ato 5c concluído" e informe quantas mensagens apareceram.
+```
+
+**Pronto quando**: mensagens JSON no tópico novo. **Contingência**: Argo demora → `oc annotate application.argoproj.io parasol-insurance-secured-tanaka-dev-claims-ai -n rhdh-gitops argocd.argoproj.io/refresh=normal --overwrite`; editor do GitLab confuso → você faz o commit e o agente segue no passo 2.
+
+**Reset do Ato 5**: fechar/reverter no GitLab o commit em `kafka-topics/` e `catalog/kafka-topics/` de `rhdh/infra-app-of-apps` (o Argo remove o tópico), o Resource some do catálogo sozinho (Location `infra-resources` com glob), e reverter a linha `KAFKA_TOPIC` no repositório GitOps da feature.
+
+---
+
 ## Depois de cada gravação (reset para regravar)
 
 | Ato | Reset |
 |---|---|
 | 1, 1b, 2 | `bash webinar/reset-tanaka-dev.sh tanaka-dev claims-ai` (apps Argo, namespace, projeto GitOps, branch, webhook, Location do catálogo e pedido de chave da persona); leva 2 min; validado |
-| 3 | nada (a chave continua válida; o contador de 429 zera em 10 s) |
+| 3 | nada (a chave continua válida; o contador de 429 zera em 10 s). A chave aparece mascarada com um ícone de olho; para o curl, ler do cluster: `oc get secret -n kuadrant-system -l app=parasol-api` (o secret `devportal-kuadrant-tanaka-dev-…`) sem exibir na tela |
+| 5 | ver "Reset do Ato 5" acima |
 | 4 | desregistrar o template (acima); fechar ou manter o MR |

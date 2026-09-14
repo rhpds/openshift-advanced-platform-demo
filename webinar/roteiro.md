@@ -17,13 +17,13 @@ Duração estimada: **35 min** (ação + fala). Ensaiar com cronômetro antes de
 | Dia | Template de IA fora do catálogo (etapa 7 registra ao vivo) | `oc exec` no RHDH: `GET /api/catalog/entities/by-name/template/default/request-postgresql-database` deve dar 404 |
 | Dia | Lightspeed do RHDH aquecido: fazer a pergunta da etapa 1 uma vez como tanaka-dev | histórico "Recent" com a resposta |
 | Dia | Claude Code do apresentador ligado ao MCP governado | `claude mcp add --transport http --scope user rhdh-platform https://mcp-developer-hub.<domínio>/api/mcp-actions/v1 --header "X-API-Key: <platform-key-demo>"`; `claude mcp list` deve mostrar conectado |
-| Dia | Dois navegadores: um logado como tanaka-dev no RHDH, outro como tanaka-pe (RHDH + console OpenShift) | zoom 110%, sem abas extras, sem notificações |
+| Dia | Um Chrome com a extensão do Claude, uma aba no RHDH logada na persona do ato (troca por Sign out / Sign In entre atos) | zoom 110%, sem abas extras, sem notificações |
 
 Chaves: `oc get secret platform-key-demo -n kuadrant-system -o jsonpath='{.data.api_key}' | base64 -d`. Nunca mostrar na tela.
 
 ## Gravação em atos
 
-A gravação é feita em quatro atos independentes, um por sessão de persona, executados pelo Cowork; os prompts e os resets estão em `webinar/cowork-prompts.md`. Ato 1: tanaka-dev (etapas 1 a 5a). Ato 2: tanaka-pe (aprovação). Ato 3: tanaka-dev (chave e limite). Ato 4: tanaka-pe (agente cria o Golden Path). Sign out/Sign In entre atos, fora da gravação; validado que o Sign out do RHDH encerra a sessão SSO do Keycloak.
+A gravação é feita em quatro atos independentes, um por sessão de persona, executados pelo Cowork; os prompts e os resets estão em `webinar/cowork-prompts.md`. Ato 1 (descobrir, entender, Golden Path, primeiro commit) e Ato 1b (resultado, pedido de chave) como tanaka-dev. Ato 2: tanaka-pe (aprovação). Ato 3: tanaka-dev (chave e limite). Ato 4: tanaka-pe (agente cria o Golden Path). Sign out/Sign In entre atos, fora da gravação; validado que o Sign out do RHDH encerra a sessão SSO do Keycloak.
 
 ## Etapas
 
@@ -48,11 +48,12 @@ O dev novo no time: quantas ferramentas, quantos README, quantas perguntas no ch
 - Ação: **Self-service** → *Onboarding features on Parasol Insurance application* → **Choose** → Branch Name `claims-ai` (qualquer nome novo, minúsculas e hífen) → Review → Create.
 - Resultado esperado: 5 passos verdes em ~12 s, botão **Open in catalog**.
 - Fala: "um campo; a plataforma criou branch, repositório GitOps, apps Argo, namespace, pipeline e o componente no catálogo".
-- Contingência: se falhar (raro), abrir o componente `parasol-insurance-secured-tanaka-dev-webinar-feature`, criado da mesma forma.
+- Atenção: o template usa um namespace por usuário (`parasol-insurance-secured-tanaka-dev`); antes de gravar de novo, `bash webinar/reset-tanaka-dev.sh tanaka-dev <branch>`.
+- Contingência: se falhar (raro), rodar o reset e repetir.
 - Nota: a pipeline só roda no primeiro push depois do bootstrap (~1 min após o template). Fazer um commit pelo GitLab web (`docs/nota.md` na branch) se quiser mostrar o gatilho; a pipeline leva 5 min.
 
 ### 4. Observar o resultado (6 min)
-- Estado inicial: componente `parasol-insurance-secured-tanaka-dev-webinar-feature` (namespace já pronto, pipeline verde).
+- Estado inicial: componente criado na etapa 3 (`parasol-insurance-secured-tanaka-dev-claims-ai`) com a pipeline concluída (gravado depois, mesma sessão).
 - Ação: abas **CI** (PipelineRun Succeeded, contagem de vulnerabilidades), **CD** (Argo Synced/Healthy, 34 recursos), **Topology**, **Image Registry** (imagem assinada em `parasol/parasol-insurance-secured-tanaka-dev`), **Service Mesh**; link **Grafana: Parasol Platform Overview (this namespace)**.
 - Fala: "o dev não configurou Tekton, Argo, Quay, ACS, SBOM nem mesh; recebeu tudo por padrão e vê tudo no mesmo lugar".
 - Contingência: se a pipeline da etapa 3 já terminou, usar o componente novo; senão, o pronto.

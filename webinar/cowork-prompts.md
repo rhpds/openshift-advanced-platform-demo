@@ -15,7 +15,7 @@ Regras comuns a todos os atos (já embutidas nos prompts):
 
 ## Ato 1 · Tanaka Developer descobre, entende e usa a plataforma
 
-**Pré-condição**: Chrome com a extensão do Claude, uma aba no RHDH logada como **Tanaka Developer**; Lightspeed com a pergunta do passo 1 já respondida uma vez hoje (aquecimento). Duração alvo: 12 min.
+**Pré-condição**: `bash webinar/reset-tanaka-dev.sh tanaka-dev <branch-anterior>` executado (a persona não pode ter uma feature ativa: o template usa um namespace por usuário). Chrome com a extensão do Claude, uma aba no RHDH logada como **Tanaka Developer** e o GitLab (`https://gitlab-gitlab.<domínio>`) também logado como `tanaka-dev` na mesma janela; Lightspeed com a pergunta do passo 1 já respondida uma vez hoje (aquecimento). Duração alvo: 10 min.
 
 **Prompt**
 
@@ -37,22 +37,43 @@ Você vai executar uma demonstração gravada no Red Hat Developer Hub (RHDH) co
 3. Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/create/templates/default/parasol-insurance-secured-dev
    No campo "Branch Name" digite: claims-ai
    Clique em "Review". Pause 3 segundos. Clique em "Create".
-   Aguarde os cinco passos ficarem verdes (cerca de 15 segundos). Pause 3 segundos. Clique em "Open in catalog" e pause 5 segundos na página do novo componente.
+   Aguarde os cinco passos ficarem verdes (cerca de 15 segundos). Pause 3 segundos. Clique em "Open in catalog" e pause 5 segundos na página do novo componente (parasol-insurance-secured-tanaka-dev-claims-ai).
 
-4. Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/catalog/default/component/parasol-insurance-secured-tanaka-dev-webinar-feature
-   Este é um componente igual ao que acabou de ser criado, mas com a pipeline já concluída. Abra as abas nesta ordem, esperando carregar e pausando 3 segundos em cada: "CI", "CD", "Topology", "Image Registry", "Service Mesh".
-   Volte para "Overview", role até "Links" e clique em "Grafana: Parasol Platform Overview (this namespace)". Aguarde o painel carregar (10 segundos), role até o fim devagar e volte para a aba do RHDH.
+4. Na página do componente, em "Links", clique em "View Source" (abre o GitLab na branch claims-ai). Aguarde 60 segundos nessa página (a plataforma ainda está criando a pipeline da branch). Depois clique em "+" → "New file", nome do arquivo: docs/claims-ai.md, conteúdo: "# Claims AI\n\nPrimeira alteração da feature." e confirme o commit na branch claims-ai (botão "Commit changes"). Se o GitLab pedir login, pare e me avise.
 
-5. Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/kuadrant/api-products
-   Clique em "Parasol Insurance Claims API". Pause 3 segundos na visão geral e abra a aba "Policies". Pause 3 segundos.
-   Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/kuadrant/my-api-keys
-   Clique em "Request Access". Selecione a API "Parasol Insurance Claims API" e o tier "silver". No campo de caso de uso escreva: "Integração do portal de sinistros da corretora". Aceite os termos e clique em "Request". Confirme que o pedido aparece com estado pendente.
+5. Volte para https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/catalog/default/component/parasol-insurance-secured-tanaka-dev-claims-ai/ci
+   Aguarde até 40 segundos e recarregue uma vez: deve aparecer um Pipeline Run em execução. Pause 5 segundos.
 
 Ao terminar, diga "Ato 1 concluído" e liste qualquer passo que não tenha funcionado como descrito.
 ```
 
-**Pronto quando**: pedido de chave em estado pendente em My API Keys.
-**Contingência**: passo 1 lento → usar o chat em "Recent" (mesma pergunta respondida); passo 3 falhar → seguir para o passo 4, que já mostra o resultado; passo 5 sem "Request Access" → recarregar a página.
+**Pronto quando**: Pipeline Run em execução na aba CI do componente novo. A pipeline leva 5 min; o Ato 1b começa depois que ela termina (não precisa de logout).
+**Contingência**: passo 1 lento → chat em "Recent"; passo 3 falhar → parar, rodar o reset e repetir; passo 4 sem login no GitLab → você faz o commit pelo GitLab (ou `git push` de um arquivo) e o agente segue no passo 5.
+
+---
+
+## Ato 1b · Tanaka Developer observa o resultado e pede acesso à API
+
+**Pré-condição**: mesma sessão do Ato 1; pipeline do componente `parasol-insurance-secured-tanaka-dev-claims-ai` concluída (aba CI: Succeeded). Duração alvo: 7 min.
+
+**Prompt**
+
+```
+Você continua como Tanaka Developer no Red Hat Developer Hub. Nunca clique em "Sign In" ou "Sign out". Confirme "Tanaka Developer" no canto superior direito.
+
+1. Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/catalog/default/component/parasol-insurance-secured-tanaka-dev-claims-ai
+   Abra as abas nesta ordem, esperando carregar (5 a 15 segundos) e pausando 3 segundos em cada: "CI" (Pipeline Run Succeeded), "CD" (Synced, Healthy), "Topology", "Image Registry", "Service Mesh".
+   Volte para "Overview", role até "Links" e clique em "Grafana: Parasol Platform Overview (this namespace)". Aguarde o painel carregar (10 segundos), role até o fim devagar e volte para a aba do RHDH.
+
+2. Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/kuadrant/api-products
+   Clique em "Parasol Insurance Claims API". Pause 3 segundos na visão geral e abra a aba "Policies". Pause 3 segundos.
+   Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/kuadrant/my-api-keys
+   Clique em "Request Access". Selecione a API "Parasol Insurance Claims API" e o tier "silver". No campo de caso de uso escreva: "Integração do portal de sinistros da corretora". Aceite os termos e clique em "Request". Confirme que o pedido aparece com estado pendente.
+
+Ao terminar, diga "Ato 1b concluído".
+```
+
+**Pronto quando**: pedido de chave pendente. **Contingência**: aba CD vazia → recarregar após 10 s; sem "Request Access" → recarregar.
 
 ---
 
@@ -137,7 +158,6 @@ ou pelo terminal com o comando de registro do `webinar/roteiro.md`. Depois da gr
 
 | Ato | Reset |
 |---|---|
-| 1 | apagar a branch `claims-ai` e o namespace/apps criados: `oc delete application.argoproj.io -n rhdh-gitops -l backstage-name=parasol-insurance-secured-tanaka-dev-claims-ai-bootstrap`, `oc delete ns parasol-insurance-secured-tanaka-dev` **não** (é o namespace pronto do passo 4); apagar o projeto GitLab `tanaka-dev/parasol-insurance-secured-claims-ai-gitops` e a branch `claims-ai` de `parasol/parasol-insurance`; remover o componente do catálogo (Location do catalog-info do projeto apagado) |
-| 1 e 2 | remover o pedido de chave: `oc delete apikey -n kuadrant-tanaka-dev-lab --all` (namespace criado pelo portal para tanaka-dev) |
+| 1, 1b, 2 | `bash webinar/reset-tanaka-dev.sh tanaka-dev claims-ai` (apps Argo, namespace, projeto GitOps, branch, webhook, Location do catálogo e pedido de chave da persona); leva 2 min; validado |
 | 3 | nada (a chave continua válida; o contador de 429 zera em 10 s) |
 | 4 | desregistrar o template (acima); fechar ou manter o MR |

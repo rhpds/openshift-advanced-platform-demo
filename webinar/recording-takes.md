@@ -151,24 +151,28 @@ Estado final: aba CI com o Pipeline Run "Running".
 ### T05 — Developer observa o resultado
 
 - **Persona**: Tanaka Developer.
-- **Purpose**: build, análise estática, scans de segurança, SBOM e deploy por GitOps vieram de graça com o Golden Path.
-- **Preconditions**: pipeline de T04 concluída (`Succeeded`, ~6 min após T04); logado como tanaka-dev.
+- **Purpose**: build, análise estática, scans de segurança, SBOM e entrega por GitOps vieram de graça com o Golden Path; a aplicação resultante está rodando no namespace provisionado.
+- **Preconditions**: pipeline de T04 concluída (`Succeeded`, ~5 a 6 min após T04); Argo `parasol-insurance-secured-tanaka-dev-claims-ai` Synced/Healthy; logado como tanaka-dev. Preparação de gravação: janela/viewport do browser fixada antes do take (sem resize durante a execução; os HOLDs dependem do enquadramento).
 - **Start frame**: aba CI do componente.
-- **Evidence**: PipelineRun Succeeded com a lista de tarefas (clone, maven, sonar, build, ACS, SBOM, TPA, rollout); aba CD Synced/Healthy; Topology com `parasol-insurance-secured` e `parasol-db` rodando.
-- **Visual holds**: tarefas da pipeline (6 s); CD (5 s); Topology (6 s).
-- **End frame**: Topology.
-- **Ready when**: CI Succeeded, CD Healthy, Topology com dois workloads.
-- **Abort**: run ainda Running (esperar fora da gravação e reiniciar o take); CD vazia após recarregar uma vez.
-- **Editing**: trocas de aba CUT; zoom na lista de tarefas e no "Healthy"; BRIDGE para "o dev não configurou nada disso".
+- **Evidence contract** (claim strength ≤ evidence strength):
+  - CI: PipelineRun `Succeeded` e a lista de tasks/gates executados (clone, maven, sonar, build/push, ACS check e scan, SBOM, upload TPA, rollout). O badge de vulnerabilidades ao lado do run é apenas contagem: não afirmar ausência de vulnerabilidades. A seção "Gitlab Pipelines: No records to display" não é evidência de nada; ignorar.
+  - CD: aplicação `parasol-insurance-secured-tanaka-dev-claims-ai` **Synced** e **Healthy**, com o commit atual e a contagem de recursos, apresentada nas instâncias que o plugin exibe (a mesma aplicação pode aparecer duas vezes, `main` e `cluster-argocd`); não há card separado de bootstrap; namespace `parasol-insurance-secured-tanaka-dev`.
+  - Topology: renderização normal em 2 a 3 s com **um** node saudável, o Deployment `parasol-insurance-secured`. `parasol-db` não aparece e não há edge; a relação app → banco existe no runtime, mas a Topology não a visualiza. Não interagir com "Select Cluster" para tentar revelar recursos.
+- **Visual holds**: tasks da pipeline (6 s); CD com Synced/Healthy e namespace visíveis (5 s); Topology com o node da aplicação enquadrado (6 s).
+- **End frame**: Topology com o node da aplicação.
+- **Ready when**: CI Succeeded, CD Healthy, Topology com o node da aplicação renderizado.
+- **Abort**: run ainda Running (esperar fora da gravação e reiniciar o take); CD vazia após recarregar uma vez; Topology sem node após 15 s.
+- **Narration constraint**: durante a Topology, afirmar apenas que a aplicação do Golden Path está implantada e rodando no namespace provisionado após a entrega via GitOps; não afirmar que a tela demonstra a conexão com o banco. Durante a CI, dizer que os gates executaram, não o resultado deles.
+- **Editing**: trocas de aba CUT; zoom na lista de tasks, no "Healthy" e no node da aplicação; BRIDGE para "o dev não configurou nada disso".
 - **Raw / final**: 2 min / 1,5 min. **Reset**: nenhum (depende do reset de T03).
 
 ```
 Persona: Tanaka Developer.
 1. Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/catalog/default/component/parasol-insurance-secured-tanaka-dev-claims-ai/ci
-   Aguarde. Clique na seta de expandir do Pipeline Run "Succeeded" para ver as tarefas, se houver. HOLD 6 segundos.
-2. Clique na aba "CD". Aguarde até 15 segundos; se ficar vazia, recarregue uma única vez. HOLD 5 segundos sobre "Synced" e "Healthy".
-3. Clique na aba "Topology". Aguarde o grafo. HOLD 6 segundos.
-Estado final: Topology com a aplicação e o banco.
+   Aguarde. Clique na seta de expandir do Pipeline Run "Succeeded" para ver as tarefas, se houver. HOLD 6 segundos com a lista de tarefas visível.
+2. Clique na aba "CD". Aguarde até 15 segundos; se ficar vazia, recarregue uma única vez. HOLD 5 segundos com "Synced", "Healthy" e o namespace visíveis.
+3. Clique na aba "Topology". Aguarde o grafo renderizar (2 a 3 segundos; espere mais 2). Não toque em "Select Cluster" nem em "Display options". HOLD 6 segundos com o node da aplicação visível.
+Estado final: Topology com o node parasol-insurance-secured.
 ```
 
 ### T06 — Developer pede um tópico Kafka pelo Golden Path

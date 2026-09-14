@@ -1,7 +1,7 @@
 # Roteiro executável: "Como turbinar sua Engenharia de Plataforma com IA"
 
 Demonstração gravada. Instância `cluster-ql7cw` com as camadas opcionais instaladas (`post-provision.sh` com `WITH_RHCL=1 WITH_RHDH_PLUGINS=1 WITH_OBSERVABILITY=1 WITH_KIALI_PLUGIN=1`).
-Personas: **Tanaka Developer** (`tanaka-dev`) e **Tanaka Platform Engineer** (`tanaka-pe`), senha comum do demo.
+Personas: **Tanaka Developer** (`tanaka-dev`) e **Tanaka Platform Engineer** (`tanaka-pe`): são o apresentador (Sandro Tanaka) nos dois papéis; a narração é em primeira pessoa. Senha comum do demo.
 Mensagem: *Platform Engineering reduz a complexidade com self-service e Golden Paths; a IA torna a plataforma mais fácil de descobrir, entender, usar e estender.*
 
 Duração estimada: **35 min** com Connectivity Link, **38 min** com Kafka no lugar (Ato 5: pedido 3 min, aprovação 3 min, uso 5 min, mais esperas de Argo cortadas na edição). Ensaiar com cronômetro antes de gravar.
@@ -28,14 +28,16 @@ A gravação é feita em quatro atos independentes, um por sessão de persona, e
 ## Etapas
 
 ### 0. Abertura (3 min, fala, sobre a tela inicial do Developer Hub)
-**Por que engenharia de plataforma.** "Pense no primeiro dia da Tanaka no time. Para entregar uma feature ela precisa de repositório, pipeline, imagem, deploy, banco, fila, chave de API, dashboards. Em muitas empresas isso são oito ferramentas, cinco tickets e duas semanas. Engenharia de plataforma existe para virar esse jogo: o time de plataforma trata a infraestrutura como produto, com clientes internos, e entrega Golden Paths, caminhos prontos e padronizados que um desenvolvedor usa em self-service. O dev recebe o padrão sem precisar entender cada peça; a plataforma garante segurança, observabilidade e governança por padrão, não por auditoria depois. O que vocês vão ver tem esse desenho: tudo que a Tanaka faz hoje passa por um portal, o Red Hat Developer Hub, e por Golden Paths que a plataforma publicou."
+**Por que engenharia de plataforma.** "Pensem no meu primeiro dia num time novo. Para entregar uma feature eu preciso de repositório, pipeline, imagem, deploy, banco, fila, chave de API, dashboards. Em muitas empresas isso são oito ferramentas, cinco tickets e duas semanas. Engenharia de plataforma existe para virar esse jogo: o time de plataforma trata a infraestrutura como produto, com clientes internos, e entrega Golden Paths, caminhos prontos e padronizados que um desenvolvedor usa em self-service. O dev recebe o padrão sem precisar entender cada peça; a plataforma garante segurança, observabilidade e governança por padrão, não por auditoria depois. O que vocês vão ver tem esse desenho: tudo que eu faço hoje passa por um portal, o Red Hat Developer Hub, e por Golden Paths que a plataforma publicou."
 
-**Onde entra a IA.** "Mas uma plataforma só reduz carga cognitiva se o desenvolvedor consegue descobrir e entender o que ela oferece. É aqui que a IA entra, e entra de duas formas. Para o desenvolvedor, o Developer Lightspeed é o assistente dentro do portal: ele conhece este catálogo, estes templates e esta documentação, e responde a partir deles. Para o time de plataforma, um agente de IA usa as mesmas interfaces para estender a plataforma, criando um novo Golden Path a partir dos que já existem. A IA não substitui a plataforma; ela a torna descobrível, compreensível e mais rápida de evoluir. Vamos acompanhar a Tanaka em duas funções: desenvolvedora e engenheira de plataforma."
+**Onde entra a IA.** "Mas uma plataforma só reduz carga cognitiva se o desenvolvedor consegue descobrir e entender o que ela oferece. É aqui que a IA entra, e entra de duas formas. Para o desenvolvedor, o Developer Lightspeed é o assistente dentro do portal: ele conhece este catálogo, estes templates e esta documentação, e responde a partir deles. Para o time de plataforma, um agente de IA usa as mesmas interfaces para estender a plataforma, criando um novo Golden Path a partir dos que já existem. A IA não substitui a plataforma; ela a torna descobrível, compreensível e mais rápida de evoluir. Vou fazer isso em dois papéis: primeiro como desenvolvedor, depois como engenheiro de plataforma."
 
 ### 1. Descobrir com IA contextual (5 min)
+- **IA apoiando o desenvolvedor**: o Lightspeed responde a partir deste catálogo e destes templates.
 - Estado inicial: RHDH como tanaka-dev, **Developer Lightspeed** aberto na tela inicial (saudação, três cards, seletor de modelo `qwen3-14b`).
 - **Fala de contextualização (45 s, sobre a tela inicial, antes de clicar):**
   "Este é o Red Hat Developer Lightspeed, o assistente de IA embutido no Developer Hub. Três coisas importam aqui. Primeira: ele roda dentro da plataforma, ao lado do portal, e usa o modelo que a organização escolheu; aqui é um Qwen servido pela nossa própria infraestrutura de modelos, então nada do que o desenvolvedor pergunta sai para um serviço externo. Segunda: ele não responde de memória; antes de responder, consulta o próprio Developer Hub por MCP, o Model Context Protocol: o catálogo de serviços, os templates e a documentação desta instância. Por isso a resposta cita o serviço e o template que existem aqui, com os nomes certos. Terceira: os cards de sugestão são configurados pela plataforma; a equipe de plataforma decide quais perguntas guiam um desenvolvedor novo. É a IA como porta de entrada da plataforma, não como substituto dela."
+- **Se houver tempo, 30 s sobre treinamento e inferência:** "Uma dúvida comum: o modelo foi treinado com os dados da nossa plataforma? Não. O Qwen é um modelo de propósito geral; nada daqui entrou no treinamento dele e nada do que perguntamos é usado para treinar. O conhecimento da plataforma chega na hora da inferência: a cada pergunta o Lightspeed chama as ferramentas do Developer Hub, recebe o catálogo, os templates e a documentação atuais e monta a resposta com esse contexto, mais um prompt de sistema que a equipe de plataforma escreveu. Consequência prática: registrei um tópico agora, o assistente já sabe dele; não existe retreinar. O limite é o mesmo: ele só enxerga o que as ferramentas devolvem, por isso perguntas diretas, com o nome do serviço ou do template, funcionam melhor do que perguntas vagas."
 - Ação: clicar no card **"Começar uma nova feature"** (o mais rápido). Opcional: **"Conhecer o Parasol Insurance"**.
 - Resultado esperado: resposta em 40 a 70 s citando o template *Onboarding features on Parasol Insurance application*, o parâmetro `branch` e o que ele cria (branch, GitOps, Argo CD, componente no catálogo).
 - Evidência: a resposta cita nomes que existem neste catálogo (Lightspeed usa as tools MCP do próprio RHDH).
@@ -49,6 +51,7 @@ A gravação é feita em quatro atos independentes, um por sessão de persona, e
 - Contingência: se uma aba demorar, seguir; nenhuma aba depende de ação.
 
 ### 3. Golden Path (4 min)
+- **IA apoiando o desenvolvedor**: o template que a IA indicou no passo 1 é o que executo agora; a ponte entre descobrir e usar.
 - Ação: **Self-service** → *Onboarding features on Parasol Insurance application* → **Choose** → Branch Name `claims-ai` (qualquer nome novo, minúsculas e hífen) → Review → Create.
 - Resultado esperado: 5 passos verdes em ~12 s, botão **Open in catalog**.
 - Fala: "um campo; a plataforma criou branch, repositório GitOps, apps Argo, namespace, pipeline e o componente no catálogo".
@@ -72,6 +75,7 @@ A gravação é feita em quatro atos independentes, um por sessão de persona, e
 Fora do escopo do webinar. Script mantido em `scripts/ai/openshift-lightspeed.sh` para outra ocasião.
 
 ### 7. PE + IA: o agente cria um Golden Path (7 min)
+- **IA apoiando o engenheiro de plataforma**: o agente aprende com os Golden Paths existentes e publica um novo pelo mesmo endpoint governado que o Lightspeed usa.
 - Estado inicial: terminal com Claude Code conectado ao MCP governado; RHDH como tanaka-pe em **Self-service** (sem o template PostgreSQL).
 - Ação: pedir ao agente: *"Usando as tools do Developer Hub, veja como o template request-kafka-topic é feito e crie um Golden Path 'Request PostgreSQL Database' com o mesmo fluxo de aprovação. Publique no branch ai-golden-path-postgresql do repositório rhdh/rhdh-templates e registre o template no catálogo."*
 - Resultado esperado: o agente lê os templates via `fetch-template-metadata`, escreve os arquivos, faz push e chama `register-catalog-entities`; ao recarregar **Self-service** aparece **Request PostgreSQL Database**.
@@ -85,7 +89,7 @@ Fora do escopo do webinar. Script mantido em `scripts/ai/openshift-lightspeed.sh
   ou **Bulk import → Add** com a mesma URL. Depois da gravação, desregistrar pela tool `unregister-catalog-entities` (`type.locationId`) ou pela página da Location no catálogo.
 
 ### 8. Fechamento (2 min, fala)
-"Recapitulando pelo que a Tanaka fez: descobriu com o Lightspeed, entendeu pelo catálogo, usou um Golden Path, observou o resultado, pediu um tópico Kafka aprovado pela plataforma e viu a feature consumindo. Ela não abriu ticket, não escreveu YAML de pipeline, não configurou Argo, Quay, ACS nem mesh. Isso é engenharia de plataforma: o padrão vem pronto e a governança está embutida. E a IA teve dois papéis: o Lightspeed, que fez o portal responder em linguagem natural a partir do próprio catálogo, e o agente que criou um novo Golden Path a partir dos existentes. Plataforma reduz a complexidade; IA reduz a distância entre o desenvolvedor e a plataforma. Comecem pela plataforma: sem catálogo, templates e documentação, a IA não tem em que se ancorar."
+"Recapitulando pelo que eu fiz como desenvolvedor: descobri com o Lightspeed, entendi pelo catálogo, usei um Golden Path, observei o resultado, pedi um tópico Kafka aprovado pela plataforma e vi a feature consumindo. Não abri ticket, não escrevi YAML de pipeline, não configurou Argo, Quay, ACS nem mesh. Isso é engenharia de plataforma: o padrão vem pronto e a governança está embutida. E a IA teve dois papéis: o Lightspeed, que fez o portal responder em linguagem natural a partir do próprio catálogo, e o agente que criou um novo Golden Path a partir dos existentes. Plataforma reduz a complexidade; IA reduz a distância entre o desenvolvedor e a plataforma. Comecem pela plataforma: sem catálogo, templates e documentação, a IA não tem em que se ancorar."
 
 ## Pontos frágeis e recuperação
 

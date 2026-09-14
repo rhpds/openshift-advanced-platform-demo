@@ -15,12 +15,14 @@ Regras comuns a todos os atos (já embutidas nos prompts):
 
 ## Ato 1 · Tanaka Developer descobre, entende e usa a plataforma
 
+**Destaque de IA (desenvolvedor)**: passo 1, o Lightspeed indica o Golden Path a partir do catálogo; passo 3 executa exatamente esse template.
+
 **Pré-condição**: `bash webinar/reset-tanaka-dev.sh tanaka-dev <branch-anterior>` executado (a persona não pode ter uma feature ativa: o template usa um namespace por usuário). Chrome com a extensão do Claude, uma aba no RHDH logada como **Tanaka Developer** e o GitLab (`https://gitlab-gitlab.<domínio>`) também logado como `tanaka-dev` na mesma janela; Lightspeed com a pergunta do passo 1 já respondida uma vez hoje (aquecimento). Duração alvo: 11 min.
 
 **Prompt**
 
 ```
-Você vai executar uma demonstração gravada no Red Hat Developer Hub (RHDH) como a desenvolvedora Tanaka Developer. Faça exatamente os passos abaixo, na ordem, com calma (pausa de 2 segundos entre cliques). Nunca clique em "Sign In" ou "Sign out". Se aparecer uma tela de login, pare e me avise. Antes de começar, confirme que o canto superior direito mostra "Tanaka Developer".
+Você vai executar uma demonstração gravada no Red Hat Developer Hub (RHDH) no papel de Tanaka Developer. Faça exatamente os passos abaixo, na ordem, com calma (pausa de 2 segundos entre cliques). Nunca clique em "Sign In" ou "Sign out". Se aparecer uma tela de login, pare e me avise. Antes de começar, confirme que o canto superior direito mostra "Tanaka Developer".
 
 1. Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/lightspeed
    Aguarde a tela inicial carregar (saudação "Hello, Tanaka Developer", três cards e o seletor de modelo no canto superior direito). Fique parado nesta tela por 45 segundos sem mover o mouse (narração sobre o Lightspeed). Depois clique no card "Começar uma nova feature". Aguarde até a resposta terminar (o texto para de mudar e o indicador de carregamento some; pode levar até 90 segundos). Não faça mais nada enquanto carrega. Quando terminar, role a resposta devagar até o fim.
@@ -84,7 +86,7 @@ Ao terminar, diga "Ato 1b concluído".
 **Prompt**
 
 ```
-Você vai executar uma demonstração gravada no Red Hat Developer Hub como a engenheira de plataforma Tanaka Platform Engineer. Nunca clique em "Sign In" ou "Sign out". Confirme que o canto superior direito mostra "Tanaka Platform Engineer" antes de começar.
+Você vai executar uma demonstração gravada no Red Hat Developer Hub no papel de Tanaka Platform Engineer. Nunca clique em "Sign In" ou "Sign out". Confirme que o canto superior direito mostra "Tanaka Platform Engineer" antes de começar.
 
 1. Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/kuadrant/api-key-approval
    Aguarde a lista carregar. Localize o pedido de "Tanaka Developer" para "Parasol Insurance Claims API", tier silver. Pause 3 segundos sobre ele.
@@ -105,7 +107,7 @@ Ao terminar, diga "Ato 2 concluído".
 **Prompt**
 
 ```
-Você vai executar uma demonstração gravada como a desenvolvedora Tanaka Developer. Nunca clique em "Sign In" ou "Sign out". Confirme "Tanaka Developer" no canto superior direito.
+Você vai executar uma demonstração gravada no papel de Tanaka Developer. Nunca clique em "Sign In" ou "Sign out". Confirme "Tanaka Developer" no canto superior direito.
 
 1. Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/kuadrant/my-api-keys
    Recarregue a página uma vez. Confirme que a chave da "Parasol Insurance Claims API" está "Active". Pause 3 segundos. Clique no botão de copiar a chave (não a mostre nem a leia em voz alta).
@@ -127,6 +129,8 @@ Ao terminar, diga "Ato 3 concluído" e informe os códigos HTTP obtidos.
 ---
 
 ## Ato 4 · Tanaka Platform Engineer estende a plataforma com um agente
+
+**Destaque de IA (engenheiro de plataforma)**: o agente lê os Golden Paths existentes pelo MCP do Developer Hub, escreve um novo e o registra pelo mesmo endpoint governado.
 
 **Pré-condição**: Sign out, Sign In como **Tanaka Platform Engineer**. Terminal com Claude Code conectado ao MCP governado do RHDH (`claude mcp list` mostra `rhdh-platform` conectado) e um clone local de `rhdh/rhdh-templates` com credencial de push. O template "Request PostgreSQL Database" não está no catálogo (Self-service mostra 5 templates). Duração alvo: 8 min.
 
@@ -184,16 +188,19 @@ Ao terminar, diga "Ato 5a concluído" e informe a URL do merge request.
 
 ### Ato 5b · Tanaka Platform Engineer aprova o tópico
 
+**Destaque de IA (engenheiro de plataforma)**: passo 4 abaixo, o Lightspeed confirma o novo tópico no catálogo com dono e dependência, sem abrir o GitLab nem o console.
+
 **Pré-condição**: Sign out, Sign In como **Tanaka Platform Engineer**; GitLab logado como `tanaka-pe`. Duração alvo: 3 min (mais 1 a 3 min de espera do Argo CD, cortada na edição).
 
 **Prompt**
 
 ```
-Você é a engenheira de plataforma Tanaka Platform Engineer. Nunca clique em "Sign In" ou "Sign out".
+Você está no papel de Tanaka Platform Engineer. Nunca clique em "Sign In" ou "Sign out".
 
 1. Abra https://gitlab-gitlab.apps.cluster-ql7cw.dyn.redhatworkshops.io/rhdh/infra-app-of-apps/-/merge_requests e clique no merge request "Request Kafka Topic: claims-ai-intake". Abra a aba "Changes", pause 5 segundos, volte para "Overview" e clique em "Merge". Confirme se for pedido.
 2. Abra https://streams-console.apps.cluster-ql7cw.dyn.redhatworkshops.io/ e, se aparecer "Click to login anonymously", clique. Vá em "Topics". Recarregue a página a cada 30 segundos até o tópico "claims-ai-intake" aparecer (até 3 minutos). Pause 5 segundos sobre ele.
 3. Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/catalog?filters%5Bkind%5D=resource e localize "kafka-topic-claims-ai-intake". Clique nele e pause 5 segundos (dono devteam1, tipo kafka-topic, depende de kafka-cluster).
+4. Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/lightspeed e digite no campo de prompt: "O tópico Kafka claims-ai-intake já está registrado no catálogo? Quem é o dono, de que recurso ele depende e qual é a descrição?" Pressione Enter e aguarde a resposta terminar (até 90 segundos). Role a resposta devagar.
 
 Ao terminar, diga "Ato 5b concluído".
 ```
@@ -207,7 +214,7 @@ Ao terminar, diga "Ato 5b concluído".
 **Prompt**
 
 ```
-Você é Tanaka Developer. Nunca clique em "Sign In" ou "Sign out".
+Você está no papel de Tanaka Developer. Nunca clique em "Sign In" ou "Sign out".
 
 1. Abra https://gitlab-gitlab.apps.cluster-ql7cw.dyn.redhatworkshops.io/tanaka-dev/parasol-insurance-secured-claims-ai-gitops/-/blob/main/helm/templates/deployment.yaml e clique em "Edit" → "Edit single file". Logo acima da linha "- name: DEV_KAFKA_PASSWORD" insira duas linhas com a mesma indentação:
             - name: KAFKA_TOPIC

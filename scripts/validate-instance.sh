@@ -63,7 +63,9 @@ if [ "${WITH_RHCL:-0}" = 1 ]; then
   if [ -n "$PK" ]; then
     out=$(oc run validate-llm -n default --rm -i --restart=Never --image=quay.io/curl/curl:latest --env="PK=$PK" -- sh -c 'sleep 3; a=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 http://llm.parasol-gateway.svc/v1/models); b=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 -H "Authorization: Bearer $PK" http://llm.parasol-gateway.svc/v1/models); echo "nokey=$a key=$b"' 2>/dev/null | grep -E '^nokey=')
     echo "$out" | has 'nokey=401 key=200' && pass "LLM route: 401 without key, 200 with platform key" || failf "LLM route: $out"
-    [ "$(oc logs -n parasol-gateway deploy/parasol-gateway-istio --since=10m 2>/dev/null | grep -c CelError)" = 0 ] && pass "no wasm CelError in the last 10 min" || failf "wasm CelError present (token counting broken; check AuthPolicy llm has one identity)"
+    # NoSuchKey("identity") is logged for unauthenticated (401) calls on the llm route and is harmless;
+    # UndeclaredReference means the token counter itself is broken (more than one identity in the AuthPolicy)
+    [ "$(oc logs -n parasol-gateway -l gateway.networking.k8s.io/gateway-name=parasol-gateway --since=10m --tail=2000 2>/dev/null | grep CelError | grep -vc 'NoSuchKey("identity")')" = 0 ] && pass "no blocking wasm CelError in the last 10 min" || failf "wasm CelError UndeclaredReference present (token counting broken; check AuthPolicy llm has one identity)"
   else warnf "llm-key-team-demo not found (llm-gateway.sh not run)"; fi
   M="https://mcp-developer-hub.$D/api/mcp-actions/v1"; INIT='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"validate","version":"1"}}}'
   if oc get httproute mcp -n parasol-gateway >/dev/null 2>&1; then

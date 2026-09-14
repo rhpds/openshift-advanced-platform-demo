@@ -21,6 +21,12 @@ Duração estimada: **35 min** com Connectivity Link, **38 min** com Kafka no lu
 
 Chaves: `oc get secret platform-key-demo -n kuadrant-system -o jsonpath='{.data.api_key}' | base64 -d`. Nunca mostrar na tela.
 
+## Assinatura do apresentador (discreta)
+
+- Edição: lower-third com nome e cargo nos primeiros 5 s da abertura e do fechamento; marca pequena "por Sandro Tanaka" no canto inferior durante os atos.
+- No ambiente, já presente: cabeçalho do Developer Hub com "Tanaka Developer" / "Tanaka Platform Engineer" e avatar; commits e merge requests com autor Tanaka.
+- No ambiente, descartado: um card "Webinar" na página inicial do Developer Hub foi testado e quebrou a rota da home (404); revertido em 4 min. Não repetir antes da gravação. A assinatura fica na edição e nos nomes das personas.
+
 ## Gravação em atos
 
 A gravação é feita em quatro atos independentes, um por sessão de persona, executados pelo Cowork; os prompts e os resets estão em `webinar/cowork-prompts.md`. Ato 1 (descobrir, entender, Golden Path, primeiro commit) e Ato 1b (resultado, pedido de chave) como tanaka-dev. Ato 2: tanaka-pe (aprovação). Ato 3: tanaka-dev (chave e limite). Ato 4: tanaka-pe (agente cria o Golden Path). Ato 5 (a, b, c): Kafka como segundo Golden Path com aprovação por merge request; substitui os Atos 1b passo 2, 2 e 3 (Connectivity Link), que ficam como alternativa para públicos que conhecem RHCL. Sign out/Sign In entre atos, fora da gravação; validado que o Sign out do RHDH encerra a sessão SSO do Keycloak.

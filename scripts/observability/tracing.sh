@@ -133,6 +133,14 @@ Y
 done
 oc delete telemetry access-log -n parasol-gateway --ignore-not-found >/dev/null 2>&1
 echo "   Telemetry applied to: $(oc get telemetry -A -l parasol.rhdp.io/layer=observability --no-headers | wc -l | tr -d ' ') ambient namespaces"
+# Ingress traffic skips the destination waypoint by default (Istio >= 1.25 opt-in), so calls through the
+# parasol gateway never produced waypoint spans and the Jaeger UI only listed gateway/Authorino/Limitador.
+# With this label the gateway -> service hop goes through the namespace waypoint (two-tier L7), which then
+# emits "waypoint.<ns>" spans, the service the Developer Hub trace links point at.
+for ns in $(oc get ns -l istio.io/dataplane-mode=ambient,istio.io/use-waypoint --no-headers -o custom-columns=:metadata.name); do
+  oc label ns "$ns" istio.io/ingress-use-waypoint=true --overwrite >/dev/null
+done
+echo "   ingress-use-waypoint on: $(oc get ns -l istio.io/ingress-use-waypoint=true --no-headers | wc -l | tr -d ' ') namespaces"
 # the collector lives outside the watched namespaces: make its Service known to istiod
 oc apply -f - <<'Y' >/dev/null
 apiVersion: networking.istio.io/v1

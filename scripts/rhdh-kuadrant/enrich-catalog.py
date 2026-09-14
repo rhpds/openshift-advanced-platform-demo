@@ -36,6 +36,7 @@ for d in docs:
     a["backstage.io/kubernetes-namespace"] = f"{n}-prod"
     a["kiali.io/provider"] = "default"
     a["kiali.io/namespace"] = f"{n}-prod"
+    a["acs/deployment-name"] = n                                        # ACS "Security" tab (Deployment name in the prod namespace)
     d["metadata"]["links"] = links_for(n)
     d["metadata"].setdefault("tags", [])
     for t in (["quarkus", "java", "kafka", "postgresql"] + (["ai", "llm"] if n.endswith("secured") else [])):

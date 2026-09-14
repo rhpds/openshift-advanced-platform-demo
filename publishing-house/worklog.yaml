@@ -287,3 +287,26 @@ entries:
       PipelineRuns and DevSpaces workspaces deleted for visual clarity. Recording rules: freeze
       policies and layers 24 h before, validate + persona walk on the day, Lightspeed answer
       pre-warmed, Golden Path result shown on the ready namespace.
+
+  - id: "2026-09-14-016"
+    timestamp: "2026-09-14T16:40:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-14T16:40:00Z"
+    resolved_by: "sandrotanaka"
+    type: decision
+    content: >-
+      Repository reconciliation: between 05:10 and 08:40 -03 another Production Support surface
+      changed the instance and left uncommitted work. Reviewed and adopted as desired state:
+      (1) ACS "Security" tab in Developer Hub (scripts/rhdh-kuadrant/acs.sh: read-only Analyst
+      token in secret rhdh/acs-secret, plugin overlay bs_1.45.3__0.1.1, proxy /acs, annotation
+      acs/deployment-name on the parasol components via enrich-catalog.py and the rhdh-templates
+      entities); (2) Quay tab gated on isQuayAvailable (quay.sh) so components without a
+      repository slug no longer crash the tab; (3) ClusterRoleBinding cluster-monitoring-view for
+      the kiali-rhdh service account (metrics in the Service Mesh tab); (4) tracing.sh labels
+      ambient namespaces with istio.io/ingress-use-waypoint=true so gateway traffic traverses the
+      waypoint and emits waypoint spans (applied so far to the two prod namespaces only; the
+      other namespaces get it on the next tracing.sh run). One fix applied before committing:
+      acs.sh selected the Argo ignoreDifferences entry by list index; now by kind. This commit is
+      the new freeze point after the external changes; T02-T05 do not depend on any of them and
+      T06 is not blocked. Reset/validation must be repeated before recording as usual.

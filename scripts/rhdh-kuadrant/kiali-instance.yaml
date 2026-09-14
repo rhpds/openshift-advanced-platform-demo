@@ -28,3 +28,21 @@ spec:
       enabled: false
     grafana:
       enabled: false
+---
+# Kiali reads Istio metrics from the platform Prometheus (thanos-querier) with its own SA token.
+# The operator creates the SA but not this grant (the original Kiali got it from the demo's install);
+# without it every metrics/graph call answers 503 and the Service Mesh tab shows an error.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kiali-rhdh-cluster-monitoring-view
+  labels:
+    parasol.rhdp.io/layer: rhdh-kiali-plugin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-monitoring-view
+subjects:
+  - kind: ServiceAccount
+    name: kiali-rhdh-service-account
+    namespace: istio-system

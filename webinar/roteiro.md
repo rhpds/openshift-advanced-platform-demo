@@ -30,8 +30,10 @@ A gravação é feita em quatro atos independentes, um por sessão de persona, e
 ### 0. Abertura (2 min, fala)
 O dev novo no time: quantas ferramentas, quantos README, quantas perguntas no chat. Carga cognitiva é o problema; a plataforma é a resposta; a IA é o que torna a plataforma acessível.
 
-### 1. Descobrir com IA contextual (4 min)
-- Estado inicial: RHDH como tanaka-dev, **Developer Lightspeed** aberto.
+### 1. Descobrir com IA contextual (5 min)
+- Estado inicial: RHDH como tanaka-dev, **Developer Lightspeed** aberto na tela inicial (saudação, três cards, seletor de modelo `qwen3-14b`).
+- **Fala de contextualização (45 s, sobre a tela inicial, antes de clicar):**
+  "Este é o Red Hat Developer Lightspeed, o assistente de IA embutido no Developer Hub. Três coisas importam aqui. Primeira: ele roda dentro da plataforma, ao lado do portal, e usa o modelo que a organização escolheu; aqui é um Qwen servido pela nossa própria infraestrutura de modelos, então nada do que o desenvolvedor pergunta sai para um serviço externo. Segunda: ele não responde de memória; antes de responder, consulta o próprio Developer Hub por MCP, o Model Context Protocol: o catálogo de serviços, os templates e a documentação desta instância. Por isso a resposta cita o serviço e o template que existem aqui, com os nomes certos. Terceira: os cards de sugestão são configurados pela plataforma; a equipe de plataforma decide quais perguntas guiam um desenvolvedor novo. É a IA como porta de entrada da plataforma, não como substituto dela."
 - Ação: clicar no card **"Começar uma nova feature"** (o mais rápido). Opcional: **"Conhecer o Parasol Insurance"**.
 - Resultado esperado: resposta em 40 a 70 s citando o template *Onboarding features on Parasol Insurance application*, o parâmetro `branch` e o que ele cria (branch, GitOps, Argo CD, componente no catálogo).
 - Evidência: a resposta cita nomes que existem neste catálogo (Lightspeed usa as tools MCP do próprio RHDH).

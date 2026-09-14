@@ -15,7 +15,7 @@ Regras comuns a todos os atos (já embutidas nos prompts):
 
 ## Ato 1 · Tanaka Developer descobre, entende e usa a plataforma
 
-**Pré-condição**: `bash webinar/reset-tanaka-dev.sh tanaka-dev <branch-anterior>` executado (a persona não pode ter uma feature ativa: o template usa um namespace por usuário). Chrome com a extensão do Claude, uma aba no RHDH logada como **Tanaka Developer** e o GitLab (`https://gitlab-gitlab.<domínio>`) também logado como `tanaka-dev` na mesma janela; Lightspeed com a pergunta do passo 1 já respondida uma vez hoje (aquecimento). Duração alvo: 10 min.
+**Pré-condição**: `bash webinar/reset-tanaka-dev.sh tanaka-dev <branch-anterior>` executado (a persona não pode ter uma feature ativa: o template usa um namespace por usuário). Chrome com a extensão do Claude, uma aba no RHDH logada como **Tanaka Developer** e o GitLab (`https://gitlab-gitlab.<domínio>`) também logado como `tanaka-dev` na mesma janela; Lightspeed com a pergunta do passo 1 já respondida uma vez hoje (aquecimento). Duração alvo: 11 min.
 
 **Prompt**
 
@@ -23,7 +23,7 @@ Regras comuns a todos os atos (já embutidas nos prompts):
 Você vai executar uma demonstração gravada no Red Hat Developer Hub (RHDH) como a desenvolvedora Tanaka Developer. Faça exatamente os passos abaixo, na ordem, com calma (pausa de 2 segundos entre cliques). Nunca clique em "Sign In" ou "Sign out". Se aparecer uma tela de login, pare e me avise. Antes de começar, confirme que o canto superior direito mostra "Tanaka Developer".
 
 1. Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/lightspeed
-   Clique no card "Começar uma nova feature". Aguarde até a resposta terminar (o texto para de mudar e o indicador de carregamento some; pode levar até 90 segundos). Não faça mais nada enquanto carrega. Quando terminar, role a resposta devagar até o fim.
+   Aguarde a tela inicial carregar (saudação "Hello, Tanaka Developer", três cards e o seletor de modelo no canto superior direito). Fique parado nesta tela por 45 segundos sem mover o mouse (narração sobre o Lightspeed). Depois clique no card "Começar uma nova feature". Aguarde até a resposta terminar (o texto para de mudar e o indicador de carregamento some; pode levar até 90 segundos). Não faça mais nada enquanto carrega. Quando terminar, role a resposta devagar até o fim.
 
 2. Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/catalog/default/component/parasol-insurance
    Aguarde a página carregar. Role devagar até "Links" e pare 3 segundos. Depois abra, nesta ordem, esperando cada uma carregar por completo (5 a 10 segundos) e pausando 3 segundos em cada:

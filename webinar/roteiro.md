@@ -27,8 +27,10 @@ A gravação é feita em quatro atos independentes, um por sessão de persona, e
 
 ## Etapas
 
-### 0. Abertura (2 min, fala)
-O dev novo no time: quantas ferramentas, quantos README, quantas perguntas no chat. Carga cognitiva é o problema; a plataforma é a resposta; a IA é o que torna a plataforma acessível.
+### 0. Abertura (3 min, fala, sobre a tela inicial do Developer Hub)
+**Por que engenharia de plataforma.** "Pense no primeiro dia da Tanaka no time. Para entregar uma feature ela precisa de repositório, pipeline, imagem, deploy, banco, fila, chave de API, dashboards. Em muitas empresas isso são oito ferramentas, cinco tickets e duas semanas. Engenharia de plataforma existe para virar esse jogo: o time de plataforma trata a infraestrutura como produto, com clientes internos, e entrega Golden Paths, caminhos prontos e padronizados que um desenvolvedor usa em self-service. O dev recebe o padrão sem precisar entender cada peça; a plataforma garante segurança, observabilidade e governança por padrão, não por auditoria depois. O que vocês vão ver tem esse desenho: tudo que a Tanaka faz hoje passa por um portal, o Red Hat Developer Hub, e por Golden Paths que a plataforma publicou."
+
+**Onde entra a IA.** "Mas uma plataforma só reduz carga cognitiva se o desenvolvedor consegue descobrir e entender o que ela oferece. É aqui que a IA entra, e entra de duas formas. Para o desenvolvedor, o Developer Lightspeed é o assistente dentro do portal: ele conhece este catálogo, estes templates e esta documentação, e responde a partir deles. Para o time de plataforma, um agente de IA usa as mesmas interfaces para estender a plataforma, criando um novo Golden Path a partir dos que já existem. A IA não substitui a plataforma; ela a torna descobrível, compreensível e mais rápida de evoluir. Vamos acompanhar a Tanaka em duas funções: desenvolvedora e engenheira de plataforma."
 
 ### 1. Descobrir com IA contextual (5 min)
 - Estado inicial: RHDH como tanaka-dev, **Developer Lightspeed** aberto na tela inicial (saudação, três cards, seletor de modelo `qwen3-14b`).
@@ -83,7 +85,7 @@ Fora do escopo do webinar. Script mantido em `scripts/ai/openshift-lightspeed.sh
   ou **Bulk import → Add** com a mesma URL. Depois da gravação, desregistrar pela tool `unregister-catalog-entities` (`type.locationId`) ou pela página da Location no catálogo.
 
 ### 8. Fechamento (2 min, fala)
-Descobrir, entender, usar, observar, governar, estender. O dev ficou no centro; a IA falou com a plataforma que já existia.
+"Recapitulando pelo que a Tanaka fez: descobriu com o Lightspeed, entendeu pelo catálogo, usou um Golden Path, observou o resultado, pediu um tópico Kafka aprovado pela plataforma e viu a feature consumindo. Ela não abriu ticket, não escreveu YAML de pipeline, não configurou Argo, Quay, ACS nem mesh. Isso é engenharia de plataforma: o padrão vem pronto e a governança está embutida. E a IA teve dois papéis: o Lightspeed, que fez o portal responder em linguagem natural a partir do próprio catálogo, e o agente que criou um novo Golden Path a partir dos existentes. Plataforma reduz a complexidade; IA reduz a distância entre o desenvolvedor e a plataforma. Comecem pela plataforma: sem catálogo, templates e documentação, a IA não tem em que se ancorar."
 
 ## Pontos frágeis e recuperação
 

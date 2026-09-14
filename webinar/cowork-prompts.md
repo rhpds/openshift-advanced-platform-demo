@@ -188,7 +188,7 @@ Ao terminar, diga "Ato 5a concluído" e informe a URL do merge request.
 
 ### Ato 5b · Tanaka Platform Engineer aprova o tópico
 
-**Destaque de IA (engenheiro de plataforma)**: passo 4 abaixo, o Lightspeed confirma o novo tópico no catálogo com dono e dependência, sem abrir o GitLab nem o console.
+**Nota**: não perguntar ao Lightspeed sobre o tópico recém-criado; entidades novas demoram para entrar no índice de busca e a resposta sai como "não encontrado" (testado). O destaque de IA para o engenheiro de plataforma fica no Ato 4.
 
 **Pré-condição**: Sign out, Sign In como **Tanaka Platform Engineer**; GitLab logado como `tanaka-pe`. Duração alvo: 3 min (mais 1 a 3 min de espera do Argo CD, cortada na edição).
 
@@ -200,8 +200,6 @@ Você está no papel de Tanaka Platform Engineer. Nunca clique em "Sign In" ou "
 1. Abra https://gitlab-gitlab.apps.cluster-ql7cw.dyn.redhatworkshops.io/rhdh/infra-app-of-apps/-/merge_requests e clique no merge request "Request Kafka Topic: claims-ai-intake". Abra a aba "Changes", pause 5 segundos, volte para "Overview" e clique em "Merge". Confirme se for pedido.
 2. Abra https://streams-console.apps.cluster-ql7cw.dyn.redhatworkshops.io/ e, se aparecer "Click to login anonymously", clique. Vá em "Topics". Recarregue a página a cada 30 segundos até o tópico "claims-ai-intake" aparecer (até 3 minutos). Pause 5 segundos sobre ele.
 3. Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/catalog?filters%5Bkind%5D=resource e localize "kafka-topic-claims-ai-intake". Clique nele e pause 5 segundos (dono devteam1, tipo kafka-topic, depende de kafka-cluster).
-4. Abra https://backstage-developer-hub-rhdh.apps.cluster-ql7cw.dyn.redhatworkshops.io/lightspeed e digite no campo de prompt: "O tópico Kafka claims-ai-intake já está registrado no catálogo? Quem é o dono, de que recurso ele depende e qual é a descrição?" Pressione Enter e aguarde a resposta terminar (até 90 segundos). Role a resposta devagar.
-
 Ao terminar, diga "Ato 5b concluído".
 ```
 

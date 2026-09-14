@@ -46,7 +46,8 @@ Lab
 - Red Hat OpenShift Pipelines
 - Red Hat OpenShift GitOps
 - Red Hat OpenShift Service Mesh
-- Red Hat Connectivity Link (optional layer added post-provisioning; Module 3, Part 1b)
+- Red Hat Connectivity Link (optional layer added post-provisioning; Module 3 Part 1b, Module 4 Part 4 incl. the governed MCP endpoint, Module 7 Part 4)
+- Tempo, OpenTelemetry collector and Grafana (optional observability layer added post-provisioning; Module 3 Part 2)
 - Red Hat Developer Hub
 - Red Hat Advanced Cluster Security for Kubernetes
 - Red Hat Trusted Artifact Signer

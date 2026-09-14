@@ -209,3 +209,53 @@ entries:
       and 429 after ~1500 tokens on the stage key, application classifying through the gateway
       on its own budget.
 
+  - id: "2026-09-14-013"
+    timestamp: "2026-09-14T00:30:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-14T00:30:00Z"
+    resolved_by: "sandrotanaka"
+    type: note
+    content: >-
+      Observability layer added post-provisioning (scripts/observability): Tempo (monolithic, PV),
+      OpenTelemetry collector, Istio tracing provider, Limitador/Authorino spans, Kiali reading
+      Tempo, Grafana (operator v5) with Thanos + Tempo datasources and ten dashboards (Istio and
+      Kuadrant upstream, two custom built by build-dashboards.py), Grafana links in Kiali, Envoy
+      access logs on the gateway; Developer Hub got the Kiali "Service Mesh" tab and Grafana/Jaeger
+      links on the Parasol entities. Findings: (1) istiod's discoverySelectors (ambient namespaces
+      only) mean a mesh-wide Telemetry in istio-system is never seen and Services outside those
+      namespaces are unknown to the gateway: one Telemetry per ambient namespace and a
+      ServiceEntry for every off-mesh backend (collector, Tempo, Developer Hub); (2) the
+      app-of-apps re-applies the child Applications' ignoreDifferences list, so protecting the
+      Istio and Kiali CRs from selfHeal needs an ignoreDifferences on app-of-apps for that field
+      first; (3) the Kiali plugin cannot use the demo's Kiali (auth strategy openshift): a second
+      view-only instance with token auth in the same namespace keeps the demo's Kiali untouched;
+      (4) the Grafana operator remembers dashboards as applied even when the instance was
+      recreated, so Grafana needs a PVC and the script recreates the dashboard CRs when the API
+      shows fewer than expected; (5) the Backstage Grafana plugin has no export for RHDH 1.9
+      (bs_1.45), so Grafana reaches Developer Hub through entity links and the Kiali tab.
+      Content: Module 3 Part 2 got the end-to-end trace and Grafana beats; 02-details documents
+      the layer and the WITH_OBSERVABILITY / WITH_KIALI_PLUGIN flags.
+
+  - id: "2026-09-14-014"
+    timestamp: "2026-09-14T00:35:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-14T00:35:00Z"
+    resolved_by: "sandrotanaka"
+    type: note
+    content: >-
+      Developer Hub's MCP server (mcp-actions, the tools Lightspeed uses) published through the
+      parasol-gateway with Connectivity Link (scripts/rhcl/mcp-gateway.sh): X-API-Key platform
+      keys, Backstage token injected by Authorino, 10 calls/10 s per key; Tempo's query API
+      published the same way (traces-api.sh) so the end-to-end trace test runs from Postman.
+      Findings: (1) the rhdh namespace has NetworkPolicies (router + itself only), so the gateway
+      needs an explicit ingress policy on the Backstage pods, and a merge patch on a podSelector
+      adds labels instead of replacing them; (2) the gateway-level override RateLimitPolicy from
+      parasol-api.sh overrides every route-level policy on the gateway, so new limits are added
+      to it with a host predicate (a policy change there re-evaluates the API route, portal
+      approvals survived this time); (3) injecting Authorization works when the client does not
+      send one (custom header for the key); (4) the backend emits no spans (no OpenTelemetry in
+      the Quarkus image), so the trace ends at the gateway's hop to parasol-insurance with its
+      status and latency. Postman folders 6 (MCP) and 7 (end-to-end trace) added; Module 4
+      Part 4 got the MCP beat.

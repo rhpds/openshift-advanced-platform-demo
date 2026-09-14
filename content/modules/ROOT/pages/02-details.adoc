@@ -151,6 +151,22 @@ oc get secret openshift-gitops-cluster -n openshift-gitops -o jsonpath='{.data.a
 oc get secret parasol-api-key-partner1 -n kuadrant-system -o jsonpath='{.data.api_key}' | base64 -d
 ----
 
+=== Observability layer: Grafana, tracing (optional layer)
+
+* Grafana: {grafana_url}[{grafana_url}^] (viewing needs no login; the `admin` password is in the `grafana-admin-credentials` Secret of the `observability` namespace). Folders **Parasol** (two custom dashboards), **Istio** and **Connectivity Link** (upstream dashboards).
+* Traces: Jaeger UI on Tempo at {jaeger_url}[{jaeger_url}^] (OpenShift login as `{pe_user}` or cluster admin); Kiali reads the same traces (Workload → **Traces**), and so does the **Service Mesh** tab of a component in Developer Hub.
+* Trace query API through the gateway (Postman folder 7, `validate-instance.sh`): `{traces_api_url}/api/traces/<trace-id>` with header `X-API-Key` (platform key below).
+
+=== Governed MCP endpoint of Developer Hub (Section 2, Module 4 Part 4 — optional layer)
+
+* `{mcp_url}` publishes Developer Hub's MCP server (catalog and TechDocs tools) through the `parasol-gateway`; header `X-API-Key: <platform key>`, 10 calls per 10 seconds per key
+* Platform keys (also accepted by the traces API):
++
+[source,bash,role="copypaste",subs="attributes+"]
+----
+oc get secret platform-key-demo -n kuadrant-system -o jsonpath='{.data.api_key}' | base64 -d
+----
+
 === Tekton pipelines
 
 * Accessible through the OpenShift console under **Pipelines** in the `{parasol_build_ns}` namespace (and their secured counterparts in section 2)
@@ -207,16 +223,17 @@ The `ocp4-adv-app-platform-demo` catalog item is provisioned as-is; this enablem
 curl -fsSL https://raw.githubusercontent.com/rhpds/openshift-advanced-platform-demo/main/scripts/post-provision.sh | bash
 ----
 
-To include the optional Connectivity Link and Developer Hub layers (about 20 minutes more), and when the lab is served from a fork, set the variables first:
+To include the optional layers (Connectivity Link, the Developer Hub plugins, observability, the Kiali tab; about 35 minutes more), and when the lab is served from a fork, set the variables first:
 
 [source,bash,role="copypaste"]
 ----
 export REPO_RAW=https://raw.githubusercontent.com/rhpds/openshift-advanced-platform-demo/main   # or your fork
-WITH_RHCL=1 WITH_RHDH_PLUGINS=1 bash <(curl -fsSL $REPO_RAW/scripts/post-provision.sh)
-WITH_RHCL=1 WITH_RHDH_PLUGINS=1 bash <(curl -fsSL $REPO_RAW/scripts/validate-instance.sh)
+export WITH_RHCL=1 WITH_RHDH_PLUGINS=1 WITH_OBSERVABILITY=1 WITH_KIALI_PLUGIN=1
+bash <(curl -fsSL $REPO_RAW/scripts/post-provision.sh)
+bash <(curl -fsSL $REPO_RAW/scripts/validate-instance.sh)
 ----
 
-`validate-instance.sh` is read-only and prints PASS/FAIL for every layer; run it before the session on each instance.
+`validate-instance.sh` is read-only and prints PASS/FAIL for every layer, including one end-to-end trace (gateway, Authorino, Limitador, backend hop); run it before the session on each instance. The Postman collection in `tests/postman/` (seven folders, with a runbook) exercises the same paths from a laptop.
 
 It takes about 2 minutes, or up to 8 minutes the first time when the `1.0` promotion pipeline has to run. It is idempotent, so re-running it is safe. What it fixes, and why:
 
@@ -246,6 +263,8 @@ It takes about 2 minutes, or up to 8 minutes the first time when the `1.0` promo
 |===
 
 **Optional: Connectivity Link layer (Module 3, Part 1b).** The demo does not ship Red Hat Connectivity Link. Three additional scripts install it on top of the instance without touching the Parasol application: `scripts/rhcl/install.sh` (operator, control plane, console plugin), `scripts/rhcl/gateway.sh` (the `parasol-gateway` gateway of class `istio`, exposed through a Route) and `scripts/rhcl/parasol-api.sh` (the `parasol-api` HTTPRoute, the API-key `AuthPolicy`, the `RateLimitPolicy` and the `partner1` key). Run them in that order from the Web Terminal; each one verifies itself and has a `delete` mode. Skip Part 1b on instances without this layer. Two more scripts extend it: `scripts/rhcl/api-product.sh` publishes the claims API as a Connectivity Link **API Product** with gold/silver/bronze plans, which appears in the Developer Hub "Connectivity Link → API Products" page (needs the Kuadrant Developer Hub plugins, `scripts/rhdh-kuadrant/apply.sh` followed by `db-pool.sh`); and `scripts/rhcl/llm-gateway.sh` puts the external LLM endpoint of Section 3 behind the same gateway at `http://llm.parasol-gateway.svc/v1`, with a platform key per team (sent as a normal `Authorization: Bearer` header, so any OpenAI client works unchanged; the provider key is injected by the gateway from a Secret in `kuadrant-system` and never appears in a route, a policy or the application) and a `TokenRateLimitPolicy` counted from `usage.total_tokens`. `scripts/rhcl/llm-switch-app.sh <user> <branch>` points one Section 3 application at it through Vault (`secrets/litellm/gateway`) and one line in its GitOps repo; `revert` puts it back. `post-provision.sh` runs all of this with `WITH_RHCL=1 WITH_RHDH_PLUGINS=1`.
+
+**Optional: observability layer (Module 3, Part 2).** `scripts/observability/install-operators.sh` (Tempo, OpenTelemetry and Grafana operators), `tracing.sh` (Tempo, an OpenTelemetry collector, the Istio tracing provider with one `Telemetry` per ambient namespace, Limitador and Authorino spans, Kiali reading from Tempo) and `grafana.sh` (Grafana with the Thanos and Tempo datasources, ten dashboards, Grafana links in Kiali). `traces-api.sh` publishes Tempo's query API through the gateway for the end-to-end test. `scripts/rhcl/mcp-gateway.sh` (run with `WITH_RHCL=1`) publishes Developer Hub's MCP server through the gateway with platform keys, and `scripts/rhdh-kuadrant/kiali.sh` (`WITH_KIALI_PLUGIN=1`) adds the **Service Mesh** tab to Developer Hub through a second, token-authenticated Kiali instance (the demo's Kiali keeps its OpenShift login). Each script has a `delete` mode. New per-user namespaces created by the template during the session get their `Telemetry` on the next run of `tracing.sh` (or `post-provision.sh`).
 
 Two things the script cannot fix, because the Argo CD bootstrap would revert them: the **Image Registry** tab crashes on the components of the `ai-customer-service-platform` system (they have no image), and that system's owner `website-team` does not exist. Both come from a foreign catalog the demo loads; ignore those entities during the demo.
 

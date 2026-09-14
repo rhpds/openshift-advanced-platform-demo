@@ -23,8 +23,12 @@
 #
 # Env overrides: SKIP_TAG=1 skips step 4. DRY_RUN=1 prints what would change.
 #   WITH_RHCL=1          also install Red Hat Connectivity Link, the parasol gateway, the
-#                        governed API entry point and the API Product (Module 3 Part 1b)
+#                        governed API entry point, the API Product (Module 3 Part 1b) and the
+#                        governed MCP endpoint of Developer Hub (Module 4 Part 4)
 #   WITH_RHDH_PLUGINS=1  also enable the Kuadrant Developer Hub plugins + RBAC (needs WITH_RHCL)
+#   WITH_OBSERVABILITY=1 also install tracing (Tempo + OpenTelemetry, Istio/Connectivity Link/Kiali
+#                        wired) and Grafana with the Istio, Connectivity Link and Parasol dashboards
+#   WITH_KIALI_PLUGIN=1  also enable the Kiali "Service Mesh" tab in Developer Hub (needs WITH_RHDH_PLUGINS)
 #   REPO_RAW=<url>       where to fetch the sibling scripts from when run via curl | bash
 #                        (default: this repository on GitHub, branch main)
 
@@ -198,9 +202,12 @@ fetch_scripts() {
   SCRIPTS_DIR=$(cd "$(dirname "${BASH_SOURCE[0]:-x}")" 2>/dev/null && pwd || true)
   if [ -n "$SCRIPTS_DIR" ] && [ -f "$SCRIPTS_DIR/rhcl/install.sh" ]; then return; fi
   SCRIPTS_DIR=$(mktemp -d)/scripts; mkdir -p "$SCRIPTS_DIR/rhcl" "$SCRIPTS_DIR/rhdh-kuadrant"
-  for f in rhcl/install.sh rhcl/gateway.sh rhcl/parasol-api.sh rhcl/api-product.sh \
+  for f in rhcl/install.sh rhcl/gateway.sh rhcl/parasol-api.sh rhcl/api-product.sh rhcl/mcp-gateway.sh \
            rhdh-kuadrant/apply.sh rhdh-kuadrant/db-pool.sh rhdh-kuadrant/rollback.sh \
-           rhdh-kuadrant/dynamic-plugins.fragment.yaml rhdh-kuadrant/app-config.fragment.yaml rhdh-kuadrant/rbac-policy.fragment.csv; do
+           rhdh-kuadrant/dynamic-plugins.fragment.yaml rhdh-kuadrant/app-config.fragment.yaml rhdh-kuadrant/rbac-policy.fragment.csv \
+           rhdh-kuadrant/kiali.sh rhdh-kuadrant/kiali-instance.yaml \
+           observability/install-operators.sh observability/tracing.sh observability/grafana.sh observability/build-dashboards.py observability/traces-api.sh; do
+    mkdir -p "$SCRIPTS_DIR/$(dirname "$f")"
     curl -fsSL "$REPO_RAW/scripts/$f" -o "$SCRIPTS_DIR/$f"
   done
 }
@@ -210,13 +217,27 @@ if [ "${WITH_RHCL:-0}" = "1" ]; then
   run bash "$SCRIPTS_DIR/rhcl/install.sh"
   run bash "$SCRIPTS_DIR/rhcl/gateway.sh"
   run bash "$SCRIPTS_DIR/rhcl/parasol-api.sh"
-  run bash "$SCRIPTS_DIR/rhcl/api-product.sh"
+  run bash "$SCRIPTS_DIR/rhcl/mcp-gateway.sh"
+  run bash "$SCRIPTS_DIR/rhcl/api-product.sh"   # last: policy changes reset pending portal requests
 fi
 if [ "${WITH_RHDH_PLUGINS:-0}" = "1" ]; then
   log "8. Developer Hub: Kuadrant plugins + RBAC (restarts Developer Hub twice, ~8 min)"
   fetch_scripts
   run bash "$SCRIPTS_DIR/rhdh-kuadrant/apply.sh"
   run bash "$SCRIPTS_DIR/rhdh-kuadrant/db-pool.sh"
+fi
+if [ "${WITH_OBSERVABILITY:-0}" = "1" ]; then
+  log "9. Observability layer: Tempo + OpenTelemetry tracing, Grafana + dashboards (~10 min)"
+  fetch_scripts
+  run bash "$SCRIPTS_DIR/observability/install-operators.sh"
+  run bash "$SCRIPTS_DIR/observability/tracing.sh"
+  run bash "$SCRIPTS_DIR/observability/grafana.sh"
+  [ "${WITH_RHCL:-0}" = "1" ] && run bash "$SCRIPTS_DIR/observability/traces-api.sh"
+fi
+if [ "${WITH_KIALI_PLUGIN:-0}" = "1" ]; then
+  log "10. Developer Hub: Kiali plugin (second Kiali instance, restarts Developer Hub, ~5 min)"
+  fetch_scripts
+  run bash "$SCRIPTS_DIR/rhdh-kuadrant/kiali.sh"
 fi
 
 # ---------------------------------------------------------------------------

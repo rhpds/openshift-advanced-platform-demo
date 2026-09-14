@@ -257,6 +257,20 @@ image::ossm-console-traffic.png[OpenShift Service Mesh traffic,link=self,window=
 * Show the traffic breakdown by response code (200, 400, 500, etc.) (note: these aren't shown in ambient mode)
 * "This is the level of detail you get without adding a single line of instrumentation to the application. The mesh collects all of this automatically."
 
+. Follow **one request end to end** (optional observability layer, see xref:02-details.adoc#post-provisioning[Environment details]):
+* In the Kiali workload view of `parasol-insurance` open the **Traces** tab. Each dot is one request; click one.
+* The trace shows the gateway span (`parasol-gateway-istio`), the Connectivity Link spans (`authorino` for the key check, `limitador` for the rate limit) and the hop to the Parasol backend with its status and latency.
+* "This is the same request you saw hit the gateway in Part 1b, as one trace. Authorization, rate limit and the backend call, in order, with the time each one took. The gateway and the policies emit these spans; the application did not change."
+* The same traces are in the Jaeger UI at {jaeger_url}[{jaeger_url}^] (OpenShift login), and a developer sees them in Developer Hub on the component's **Service Mesh** tab (Module 4).
+
+. Open **Grafana** at {grafana_url}[{grafana_url}^] (no login needed to view) and show the **Parasol** folder:
+* **Parasol Platform Overview**: requests, 5xx ratio and p95 latency per namespace from the mesh, the Connectivity Link decisions (authorized vs. limited, 200/401/429 at the gateway), and platform health (restarts, pipeline runs, Argo CD applications).
+* **Connectivity Link: Parasol API and LLM gateway**: the governed API and the LLM token budgets of Section 3 side by side.
+* The **Istio** and **Connectivity Link** folders hold the upstream dashboards (mesh, workload, service, ztunnel; platform engineer, app developer, business user).
+* "One Grafana, fed by the platform's own Prometheus and by Tempo. The custom dashboards are two files in the repository; the standard ones came with the products."
++
+image::grafana-parasol-overview.png[Grafana Parasol Platform Overview dashboard with mesh traffic, Connectivity Link decisions and platform health panels,link=self,window=blank,align="center",width=700,title="Parasol Platform Overview: mesh traffic, policy decisions and platform health in one dashboard"]
+
 . Demonstrate the traffic **animation and graph layout options**:
 * Toggle different graph layouts (app graph, versioned app graph, workload graph)
 * Show how the graph adapts to show different perspectives
@@ -301,6 +315,7 @@ oc delete pod load-generator -n {parasol_prod_ns}
 * Detailed metrics (throughput, errors, latency) are available for every service without any application code instrumentation
 * The mesh collects all observability data automatically
 * Different graph views provide different perspectives on the same traffic data
+* One trace shows the gateway, the Connectivity Link policies and the backend hop in order, without application instrumentation
 * Workload observability (CPU, memory, network) is built into the platform through the Observe menu
 * Dashboards are customizable and alerts can be configured to catch issues proactively
 
@@ -317,7 +332,10 @@ Q: "Can developers access this?"::
 A: "Yes. The Service Mesh console is accessible through the OpenShift web console with appropriate RBAC permissions. Both platform engineers and developers can view the service graph and metrics for their namespaces."
 
 Q: "What about distributed tracing?"::
-A: "Service Mesh supports distributed tracing through integration with OpenTelemetry and Jaeger. This allows you to trace individual requests as they flow through multiple services, identifying exactly where latency or errors occur in the chain."
+A: "Shown above when the observability layer is installed: the gateways and waypoints send spans through an OpenTelemetry collector to Tempo, and Kiali, the Jaeger UI and Developer Hub read them. The Parasol application itself is not instrumented in this demo; a Quarkus application adds the OpenTelemetry extension to contribute its own spans to the same trace."
+
+Q: "Is Grafana part of the platform?"::
+A: "OpenShift ships its own monitoring and dashboards (the Observe menu you just saw). Grafana here is the community operator on top of the same Prometheus data, added so teams that already live in Grafana get the mesh, Connectivity Link and Parasol views in one place."
 
 Q: "How does this scale to larger environments?"::
 A: "The graph automatically adapts to the number of services. In larger environments, you can filter by namespace, application, or label to focus on specific areas. The underlying data collection scales with the mesh."

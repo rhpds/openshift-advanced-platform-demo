@@ -1,13 +1,23 @@
 #!/usr/bin/env bash
 # Enable the Kiali (Service Mesh) plugin in Developer Hub: a "Service Mesh" tab on components
-# annotated with kiali.io/namespace, and a Kiali page in the sidebar. Uses the RHDH service
-# account token the demo already provides (KUBERNETES_SA_TOKEN) against the Kiali route.
+# annotated with kiali.io/namespace, and a Kiali page in the sidebar.
+# The demo's Kiali uses auth.strategy=openshift, which the plugin cannot talk to ("Authentication
+# failed. Not supported"), so this adds a SECOND, view-only Kiali instance (kiali-rhdh, same
+# namespace, auth.strategy=token) and points the plugin at it with the RHDH service-account
+# token the demo already provides (KUBERNETES_SA_TOKEN). The original Kiali is untouched.
 # Requires scripts/rhdh-kuadrant/apply.sh first (it makes the RHDH ConfigMaps ours).
 set -euo pipefail
 NS=rhdh
 cd "$(dirname "$0")"
 D=$(oc get ingresses.config cluster -o jsonpath='{.spec.domain}')
-KIALI="https://kiali-istio-system.${D}"
+KIALI="https://kiali-rhdh-istio-system.${D}"
+
+echo "== Kiali instance for the plugin (kiali-rhdh, token auth, view-only)"
+oc apply -f kiali-instance.yaml
+for i in $(seq 1 30); do
+  [ "$(oc get kiali kiali-rhdh -n istio-system -o jsonpath='{.status.conditions[?(@.type=="Successful")].status}' 2>/dev/null)" = True ] && break; sleep 10
+done
+oc rollout status deployment/kiali-rhdh -n istio-system --timeout=300s | tail -1
 
 oc get cm dynamic-plugins -n $NS -o jsonpath='{.data.dynamic-plugins\.yaml}' > dp.cur.yaml
 oc get cm app-config-rhdh -n $NS -o jsonpath='{.data.app-config-rhdh\.yaml}' > ac.cur.yaml

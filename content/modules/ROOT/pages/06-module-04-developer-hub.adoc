@@ -316,6 +316,19 @@ In this instance the per-plan daily limits are declared (`PlanPolicy`) but the r
 
 . Optional, in the OpenShift console as `{pe_user}`: **Connectivity Link → API Key Approvals** and **My API Keys** show the same objects, and `oc get apikeys,apikeyrequests,apikeyapprovals -A` lists the trail.
 
+. **The MCP server behind the same gateway.** Developer Lightspeed (Part 1) answers from Developer Hub's own MCP server: the catalog and TechDocs tools. The same server is published for external agents at `{mcp_url}`, governed by Connectivity Link. From the Web Terminal, as cluster admin:
++
+[source,bash,role="copypaste",subs="attributes+"]
+----
+KEY=$(oc get secret platform-key-demo -n kuadrant-system -o jsonpath='{.data.api_key}' | base64 -d)
+curl -sk -o /dev/null -w 'without key: HTTP %{http_code}\n' -X POST {mcp_url} -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+curl -sk -X POST {mcp_url} -H "X-API-Key: $KEY" -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | grep -oE '"name":"[a-z-]+"' | sort -u
+----
++
+* `401` without a key; with the platform key, the tool list (`fetch-catalog-entities`, `fetch-template-metadata`, the TechDocs tools).
+* "An agent outside the cluster, Claude Desktop or an IDE, gets a key per client, not the Backstage token. The gateway checks the key, injects the token, and counts the calls: ten per ten seconds per client. Revoking an agent is deleting one Secret. The MCP server did not change; Lightspeed keeps using it directly."
+* In the OpenShift console, **Connectivity Link → Policies** in `parasol-gateway` shows the `mcp` route with its AuthPolicy, next to the Parasol API and the LLM route of Section 3: three very different backends, one governance model.
+
 image::rhdh-api-products.png[Developer Hub Connectivity Link API Products page listing the Parasol Insurance Claims API with its route, policy and tags,link=self,window=blank,align="center",width=700,title="The claims API published as an API Product in Developer Hub"]
 
 **What they should notice:**
@@ -336,6 +349,9 @@ A: "Yes. The API Product has an approval mode; `auto` issues the key immediately
 
 Q: "Where does the key live?"::
 A: "In a Kubernetes Secret in a namespace owned by the requesting developer, created by Developer Hub. The gateway's AuthPolicy reads keys from those namespaces. Revoking is deleting the resource."
+
+Q: "How does an MCP client use the governed endpoint?"::
+A: "Any client that speaks MCP over HTTP and can add a header: point it at the endpoint and set `X-API-Key` to the platform key. The key is the client's identity for the rate limit and the audit trail; the Backstage token stays in the cluster."
 
 Q: "How is this different from 3scale's developer portal?"::
 A: "3scale offers a full public developer portal with monetization and analytics. This is the Kubernetes-native version for internal and partner consumers: the same resources the platform team already manages, surfaced in the developer portal the organization already runs."

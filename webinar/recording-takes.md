@@ -89,7 +89,12 @@ Estado final: aba Dependencies visível.
 
 - **Persona**: Tanaka Developer.
 - **Purpose**: um campo, e a plataforma cria branch, GitOps, Argo, pipeline e o componente no catálogo.
-- **Preconditions**: reset master executado (a persona não tem feature ativa; `parasol-insurance-secured-tanaka-dev` não existe); logado como tanaka-dev.
+- **Preconditions**: pre-flight backstage concluído (abaixo) com estado limpo confirmado; logado como tanaka-dev. Branch fixa do roteiro: `claims-ai` (não gerar nomes dinâmicos: previsibilidade, reset e continuidade dependem do nome fixo).
+- **Pre-flight (PRODUCTION SUPPORT, fora da gravação; não faz parte do take)**:
+  1. `oc whoami` responde `admin` (a sessão expira entre dias; se falhar, `oc login` antes de qualquer outro passo).
+  2. Dirty-state check da persona `tanaka-dev`, todos devem estar vazios: namespace `parasol-insurance-secured-tanaka-dev` (NotFound); apps Argo em `rhdh-gitops` com `tanaka-dev` no nome (0); branches recentes de `parasol/parasol-insurance` criadas pela persona (nenhuma além das do demo); projetos GitLab do usuário `tanaka-dev` (nenhum `parasol-insurance-secured-*-gitops`); componentes do catálogo com owner `user:default/tanaka-dev` (0); webhooks de `parasol/parasol-insurance` com `tanaka-dev` na URL (0).
+  3. Se qualquer item existir: rodar o reset (abaixo) uma vez por branch encontrada e repetir o check. Só então liberar o take.
+  Condição operacional conhecida: um scaffolder que falha no meio deixa estado parcial (branch, projeto GitOps e componente no catálogo) mesmo sem apps Argo nem namespace; o reset cobre esse caso quando executado com a branch correspondente.
 - **Start frame**: formulário do template com o campo "Branch Name" vazio.
 - **Evidence**: página de Review com `claims-ai`; os 5 passos verdes; componente `parasol-insurance-secured-tanaka-dev-claims-ai` com owner Tanaka Developer e system parasol-insurance.
 - **Visual holds**: Review (3 s); passos verdes (5 s); Overview do componente novo (6 s).
@@ -98,7 +103,7 @@ Estado final: aba Dependencies visível.
 - **Abort**: qualquer passo vermelho; formulário sem o campo; erro ao criar.
 - **Editing**: execução dos passos KEEP (12 s); carregamentos CUT; zoom nos passos e no owner.
 - **Raw / final**: 1,5 min / 1,2 min.
-- **Reset**: `bash webinar/reset-tanaka-dev.sh tanaka-dev claims-ai` (2 min).
+- **Reset (CONTINGENCY / RESET, fora da gravação)**: `bash webinar/reset-tanaka-dev.sh tanaka-dev claims-ai` (~2 min; para artefatos de outra branch, passar o nome dela). Determinismo validado empiricamente em 2026-09-14: estado sujo completo (namespace, apps Argo, projeto GitOps, branch, webhook, componente) e estado parcial de scaffolder falho, ambos levados ao estado inicial limpo, verificado item a item. Fonte executável única: o script; não duplicar aqui.
 
 ```
 Persona: Tanaka Developer.

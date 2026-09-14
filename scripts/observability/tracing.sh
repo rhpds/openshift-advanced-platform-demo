@@ -108,7 +108,14 @@ fi
 # istiod only watches the namespaces selected by discoverySelectors (istio.io/dataplane-mode=ambient),
 # so a mesh-wide Telemetry in istio-system is never seen: one Telemetry per ambient namespace instead
 # (re-run after new per-user namespaces are created; post-provision.sh does that).
+# Istio honours ONE namespace-wide Telemetry per namespace, so the gateway namespace gets its
+# Envoy access logs (stdout of the gateway pods: who called what, with the response flags) in the
+# same resource as the tracing configuration.
 for ns in $(oc get ns -l istio.io/dataplane-mode=ambient --no-headers -o custom-columns=:metadata.name); do
+  extra=""; [ "$ns" = parasol-gateway ] && extra='
+  accessLogging:
+    - providers:
+        - name: envoy'
   oc apply -f - <<Y >/dev/null
 apiVersion: telemetry.istio.io/v1
 kind: Telemetry
@@ -121,24 +128,11 @@ spec:
   tracing:
     - providers:
         - name: otel-tracing
-      randomSamplingPercentage: 100
+      randomSamplingPercentage: 100${extra}
 Y
 done
+oc delete telemetry access-log -n parasol-gateway --ignore-not-found >/dev/null 2>&1
 echo "   Telemetry applied to: $(oc get telemetry -A -l parasol.rhdp.io/layer=observability --no-headers | wc -l | tr -d ' ') ambient namespaces"
-# Envoy access logs on the gateway (stdout of the gateway pods): who called what, with the response flags
-oc apply -f - <<'Y' >/dev/null
-apiVersion: telemetry.istio.io/v1
-kind: Telemetry
-metadata:
-  name: access-log
-  namespace: parasol-gateway
-  labels:
-    parasol.rhdp.io/layer: observability
-spec:
-  accessLogging:
-    - providers:
-        - name: envoy
-Y
 # the collector lives outside the watched namespaces: make its Service known to istiod
 oc apply -f - <<'Y' >/dev/null
 apiVersion: networking.istio.io/v1

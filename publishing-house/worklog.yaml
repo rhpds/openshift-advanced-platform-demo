@@ -259,3 +259,31 @@ entries:
       the Quarkus image), so the trace ends at the gateway's hop to parasol-insurance with its
       status and latency. Postman folders 6 (MCP) and 7 (end-to-end trace) added; Module 4
       Part 4 got the MCP beat.
+
+  - id: "2026-09-14-015"
+    timestamp: "2026-09-14T05:50:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-14T05:50:00Z"
+    resolved_by: "sandrotanaka"
+    type: decision
+    content: >-
+      Webinar "Como turbinar sua Engenharia de Plataforma com IA": the instance doubles as the
+      recorded demo. Journey and executable script in webinar/roteiro.md (35 min with pauses).
+      Personas tanaka-dev / tanaka-pe with avatars (scripts/users/create-persona.sh: Keycloak needs
+      "picture" as a managed user-profile attribute, a partial PUT wipes the user's names and forces
+      VERIFY_PROFILE, avatars served from public GitLab project rhdh/avatars allowed in the RHDH CSP).
+      Lightspeed suggestion cards replaced by the three journey questions in pt-BR
+      (lightspeed-prompts.sh). Golden Path run through the UI as tanaka-dev (12 s scaffolding,
+      5 min pipeline, first pipeline only runs on a push after the bootstrap); the template skeleton
+      now gives created components their own Quay repository, the Kiali tab and observability links
+      (it pointed the Image Registry tab at the foundational repo). AI use cases: (1) an AI agent
+      authors a Golden Path from an existing one and registers it through the governed MCP endpoint
+      (validated end to end: MR !1 + branch ai-golden-path-postgresql in rhdh/rhdh-templates,
+      register/unregister via MCP tools; unregister needs type.locationId); (2) OpenShift Lightspeed
+      through the LLM gateway was built and validated (30 s, uses cluster tools) but cut from the
+      webinar scope by the user; script kept, instance removed; (3) DevSpaces assistants via the
+      gateway only if DevSpaces enters the video (not in the current journey). Old failed
+      PipelineRuns and DevSpaces workspaces deleted for visual clarity. Recording rules: freeze
+      policies and layers 24 h before, validate + persona walk on the day, Lightspeed answer
+      pre-warmed, Golden Path result shown on the ready namespace.

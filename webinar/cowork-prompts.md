@@ -227,7 +227,7 @@ Ao terminar, diga "Ato 5c concluído" e informe quantas mensagens apareceram.
 
 **Pronto quando**: mensagens JSON no tópico novo. **Contingência**: Argo demora → `oc annotate application.argoproj.io parasol-insurance-secured-tanaka-dev-claims-ai -n rhdh-gitops argocd.argoproj.io/refresh=normal --overwrite`; editor do GitLab confuso → você faz o commit e o agente segue no passo 2.
 
-**Reset do Ato 5**: fechar/reverter no GitLab o commit em `kafka-topics/` e `catalog/kafka-topics/` de `rhdh/infra-app-of-apps` (o Argo remove o tópico), o Resource some do catálogo sozinho (Location `infra-resources` com glob), e reverter a linha `KAFKA_TOPIC` no repositório GitOps da feature.
+**Reset do Ato 5**: apagar os dois arquivos do tópico em `rhdh/infra-app-of-apps` (`kafka-topics/claims-ai-intake.yaml` e `catalog/kafka-topics/claims-ai-intake.yaml`) com um commit; como a pasta fica vazia, o Argo CD **não** faz o prune (proteção contra apagar tudo): rodar `oc delete kafkatopic claims-ai-intake -n kafka` e depois `oc annotate application.argoproj.io infra-kafka-topics -n openshift-gitops argocd.argoproj.io/refresh=normal --overwrite`. O Resource some do catálogo em 1 a 2 min. Reverter a linha `KAFKA_TOPIC` no repositório GitOps da feature.
 
 ---
 

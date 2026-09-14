@@ -27,8 +27,9 @@ curl -sk -o /dev/null -w "   branch $B deleted: HTTP %{http_code}\n" -X DELETE -
 curl -sk -H "PRIVATE-TOKEN: $T" "$GL/api/v4/projects/parasol%2Fparasol-insurance/hooks" | jq -r --arg u "$U" '.[] | select(.url|test("el-secured-" + $u + "\\.")) | .id' \
   | while read -r hid; do curl -sk -o /dev/null -w "   webhook $hid deleted: HTTP %{http_code}\n" -X DELETE -H "PRIVATE-TOKEN: $T" "$GL/api/v4/projects/parasol%2Fparasol-insurance/hooks/$hid"; done
 echo "== developer-portal key objects of $U"
-oc delete apikey -n "kuadrant-${U}-lab" --all --ignore-not-found 2>/dev/null || true
-oc get apikeyrequest,apikeyapproval -A -o json 2>/dev/null | jq -r --arg u "$U" '.items[] | select(.metadata.name|test("kuadrant-" + $u + "-lab")) | .kind + " " + .metadata.namespace + " " + .metadata.name' \
+# the portal creates one namespace per persona, kuadrant-<user>-<hash>
+for kns in $(oc get ns --no-headers -o custom-columns=:metadata.name | grep -E "^kuadrant-${U}-" ); do oc delete apikey -n "$kns" --all --ignore-not-found 2>/dev/null || true; done
+oc get apikeyrequest,apikeyapproval -A -o json 2>/dev/null | jq -r --arg u "$U" '.items[] | select(.metadata.name|test("kuadrant-" + $u + "-")) | .kind + " " + .metadata.namespace + " " + .metadata.name' \
   | while read -r k n name; do oc delete "$k" "$name" -n "$n" --ignore-not-found; done
 echo "== waiting for the namespace to go"; for i in $(seq 1 30); do oc get ns "$NS" >/dev/null 2>&1 || break; sleep 5; done
 echo "Done. $U can run the template again (branch name must be new or the same: $B)."

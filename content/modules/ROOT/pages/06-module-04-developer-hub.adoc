@@ -257,6 +257,105 @@ A: "Yes. Templates are the golden path. They include the organization's approved
 Q: "What happens to the environment when the feature is done?"::
 A: "The development environment can be cleaned up through the catalog. The platform team can also configure automatic cleanup policies. The branch and its associated resources are removed when no longer needed."
 
+[#part-4]
+== Part 4 — API products and self-service API keys
+
+[NOTE]
+====
+**Instance preparation:** this part needs the Connectivity Link layer and the Kuadrant Developer Hub plugins (see xref:02-details.adoc#post-provisioning[Post-provisioning fix-ups]). `scripts/rhcl/api-product.sh` publishes the claims API as an API Product. Skip this part on instances without the layer; the module still works without it.
+====
+
+=== Know
+
+_Part 2 showed the catalog telling developers which APIs exist. Connectivity Link adds the next question: how do I get access? An **API Product** is a Connectivity Link resource that wraps an `HTTPRoute` (the claims API from Section 1) with plans (gold, silver, bronze, each with its own daily budget), documentation and an owner. It appears in Developer Hub as a catalog entity and in the **Connectivity Link** menu, where a developer requests a key for a plan, the API owner approves it, and the platform issues the key and enforces the plan. No ticket, no e-mail, no shared credential._
+
+**Business challenge:**
+
+* Getting an API key at Parasol means a ticket to the API team and a credential pasted into a chat
+* Nobody knows which consumer holds which key, or which plan they are on
+* Revoking or downgrading a consumer means touching gateway configuration by hand
+
+**Value proposition:**
+
+The request, the approval and the key are Kubernetes resources reconciled by Connectivity Link; Developer Hub is the user interface on top. The developer self-serves, the owner keeps the approval gate, and the platform enforces the plan at the gateway the moment the key is approved. The audit trail is the resources themselves.
+
+=== Show
+
+**What I say:**
+
+"You found the claims API in the catalog. Now you need a key. In most companies that is a ticket and a week. Here it is a form, an approval and a policy."
+
+**What I do:**
+
+. As `{dev_user}`, open **Connectivity Link → API Products** in the left sidebar:
+* Show **Parasol Insurance Claims API**, version v1, route `parasol-api`, policy `parasol-api-plans`, tags `parasol`, `claims`, `insurance`.
+* Click it: the Overview shows owner (`devteam1`), documentation and the **Policies** tab with the AuthPolicy, RateLimitPolicy and PlanPolicy attached to the route.
+* "This is the same route and the same policies the platform engineer showed in Section 1. Here they are published as a product a developer can consume."
+
+. Open **Connectivity Link → My API Keys** and click **Request Access**:
+* API: **Parasol Insurance Claims API**; Tier: **silver** (1,000 requests per day); use case: a sentence; accept the terms; **Request**.
+* "The developer chose a plan. Behind the form, Developer Hub created an `APIKey` resource in a namespace that belongs to this developer, and the platform turned it into a pending request for the API owner."
+
+. Switch to `{pe_user}` and open **Connectivity Link → API Key Approval**:
+* Show the pending request: product, tier, requester, use case.
+* Click **Approve**. "The owner keeps the gate. Approval creates an `APIKeyApproval` resource; Connectivity Link activates the key against the route's AuthPolicy and applies the silver plan."
+
+. Back as `{dev_user}`, refresh **My API Keys**: the key is **Active**. Copy it and call the API from the Web Terminal:
++
+[source,bash,role="copypaste",subs="attributes+"]
+----
+curl -sk -o /dev/null -w 'HTTP %{http_code}\n' -H "Authorization: APIKEY <key from My API Keys>" {parasol_api_url}/api/claims
+----
++
+* `200`. "Same governed endpoint as Section 1, now with a key that this developer requested and this owner approved. The tier travels with the key; the rate limit from Section 1 applies to it like to any consumer."
+
+[NOTE]
+====
+In this instance the per-plan daily limits are declared (`PlanPolicy`) but the route's `RateLimitPolicy` from Module 3 is the effective limiter: a route has one limiter and the explicit policy takes precedence. Present the plans as the contract the owner offers; the enforcement shown on stage is the 10 requests per 10 seconds from Section 1.
+====
+
+. Optional, in the OpenShift console as `{pe_user}`: **Connectivity Link → API Key Approvals** and **My API Keys** show the same objects, and `oc get apikeys,apikeyrequests,apikeyapprovals -A` lists the trail.
+
+. **The MCP server behind the same gateway.** Developer Lightspeed (Part 1) answers from Developer Hub's own MCP server: the catalog and TechDocs tools. The same server is published for external agents at `{mcp_url}`, governed by Connectivity Link. From the Web Terminal, as cluster admin:
++
+[source,bash,role="copypaste",subs="attributes+"]
+----
+KEY=$(oc get secret platform-key-demo -n kuadrant-system -o jsonpath='{.data.api_key}' | base64 -d)
+curl -sk -o /dev/null -w 'without key: HTTP %{http_code}\n' -X POST {mcp_url} -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+curl -sk -X POST {mcp_url} -H "X-API-Key: $KEY" -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | grep -oE '"name":"[a-z-]+"' | sort -u
+----
++
+* `401` without a key; with the platform key, the tool list (`fetch-catalog-entities`, `fetch-template-metadata`, the TechDocs tools).
+* "An agent outside the cluster, Claude Desktop or an IDE, gets a key per client, not the Backstage token. The gateway checks the key, injects the token, and counts the calls: ten per ten seconds per client. Revoking an agent is deleting one Secret. The MCP server did not change; Lightspeed keeps using it directly."
+* In the OpenShift console, **Connectivity Link → Policies** in `parasol-gateway` shows the `mcp` route with its AuthPolicy, next to the Parasol API and the LLM route of Section 3: three very different backends, one governance model.
+
+image::rhdh-api-products.png[Developer Hub Connectivity Link API Products page listing the Parasol Insurance Claims API with its route, policy and tags,link=self,window=blank,align="center",width=700,title="The claims API published as an API Product in Developer Hub"]
+
+**What they should notice:**
+
+* The API Product wraps the route and policies from Section 1; nothing was rebuilt for the portal
+* Request, approval and key are resources, so the audit trail is in the cluster, not in a mailbox
+* The plan (silver) travels with the key from the moment of approval; changing plans is an approval, not a configuration change
+* Developer Hub is the interface; Connectivity Link is the system of record
+
+**Business value callout:**
+
+"Parasol's partner onboarding takes a week because a human has to hand out a credential and configure the gateway. With API Products, the partner requests, the owner approves in Developer Hub, and the platform does the rest, in minutes, with a trail. The API team stops being the bottleneck and keeps the control."
+
+**If asked:**
+
+Q: "Can approval be automatic for some plans?"::
+A: "Yes. The API Product has an approval mode; `auto` issues the key immediately for products where the owner does not need to review. Manual approval is shown here because it is the case most customers ask about."
+
+Q: "Where does the key live?"::
+A: "In a Kubernetes Secret in a namespace owned by the requesting developer, created by Developer Hub. The gateway's AuthPolicy reads keys from those namespaces. Revoking is deleting the resource."
+
+Q: "How does an MCP client use the governed endpoint?"::
+A: "Any client that speaks MCP over HTTP and can add a header: point it at the endpoint and set `X-API-Key` to the platform key. The key is the client's identity for the rate limit and the audit trail; the Backstage token stays in the cluster."
+
+Q: "How is this different from 3scale's developer portal?"::
+A: "3scale offers a full public developer portal with monetization and analytics. This is the Kubernetes-native version for internal and partner consumers: the same resources the platform team already manages, surfaced in the developer portal the organization already runs."
+
 [#summary]
 == Module 4 summary
 

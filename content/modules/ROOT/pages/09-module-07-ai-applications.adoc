@@ -2,7 +2,7 @@
 include::partial$_attributes.adoc[]
 :imagesdir: ../assets/images
 
-*Presenter note*: This is Section 3 (Intelligent Applications). The Parasol application is running with a keyword-based email routing system that sends ambiguous emails to "Review Required" for manual triage. A new developer ({dev2_user}) is tasked with replacing this with LLM-powered classification. They log in to Developer Hub, create a new development environment using the "Parasol Insurance Secured Development" template with branch name `llm-routing`, pull in the LLM classification code from a prepared branch, and push it through the pipeline. The result is intelligent email routing with no more manual review. Target duration: 15 minutes across 3 parts.
+*Presenter note*: This is Section 3 (Intelligent Applications). The Parasol application is running with a keyword-based email routing system that sends ambiguous emails to "Review Required" for manual triage. A new developer ({dev2_user}) is tasked with replacing this with LLM-powered classification. They log in to Developer Hub, create a new development environment using the "Parasol Insurance Secured Development" template with branch name `llm-routing`, pull in the LLM classification code from a prepared branch, and push it through the pipeline. The result is intelligent email routing with no more manual review. Target duration: 15 minutes across 3 parts, plus about 5 minutes for the optional Part 4 (Connectivity Link token budgets) on prepared instances.
 
 [NOTE]
 ====
@@ -303,6 +303,103 @@ A: "The LLM endpoint is configurable through Vault. Switching to a different mod
 
 Q: "How does the claims administrator verify the AI's decisions?"::
 A: "Every classification includes the LLM's reasoning. The administrator can see why each email was routed to a specific department. If they disagree, they can manually reassign it. Over time, these corrections can inform prompt improvements."
+
+'''
+
+[#part-4]
+== Part 4 — Governing LLM consumption with Connectivity Link
+
+[NOTE]
+====
+**Instance preparation:** this part needs the Connectivity Link layer (see xref:02-details.adoc#post-provisioning[Post-provisioning fix-ups]): `scripts/rhcl/llm-gateway.sh` publishes the governed endpoint `http://llm.parasol-gateway.svc/v1`, and `scripts/rhcl/llm-switch-app.sh {dev2_user} llm-routing` points the application from Part 3 at it. Skip this part on instances without the layer.
+====
+
+=== Know
+
+_In Part 3 the application called the model endpoint directly, with the provider's API key mounted from Vault. That works, but every team that does the same holds a copy of the provider credential, and nobody can say how many tokens each team burns. Connectivity Link closes both gaps at the platform level: the LLM becomes an `HTTPRoute` on the gateway, an `AuthPolicy` identifies each team by a platform-issued key and injects the real provider credential on the way out, and a `TokenRateLimitPolicy` counts `usage.total_tokens` from the OpenAI-style response to enforce a token budget per team._
+
+**Business challenge:**
+
+* The model provider's credential is copied into every application that calls it; rotating it means touching them all
+* No per-team accounting of token consumption, so no way to budget or charge back
+* A runaway prompt loop in one team can exhaust the provider quota for everyone
+* Switching providers means reconfiguring every consumer
+
+**Value proposition:**
+
+Applications call an internal, stable hostname with a key the platform issued to their team. The platform owns the provider relationship: credential, endpoint, quota. Token budgets are policy, enforced before the request leaves the cluster, and visible per team. The application from Part 3 is switched with a configuration change in Vault and one line in its GitOps repository. No code changed.
+
+=== Show
+
+**What I say:**
+
+"The routing service works. Now put on the platform engineer's hat: this application is calling an external model with a credential it got from Vault. Multiply that by twenty teams. Who rotates the key? Who knows which team spent the tokens this month? With Connectivity Link the model becomes just another governed API on the same gateway we used in Section 1, and the budget is a policy."
+
+**What I do:**
+
+. In the **OpenShift console** as `{pe_user}`, open **Networking → HTTPRoutes** and select `llm` in the `parasol-gateway` namespace:
+* Point out the hostname `llm.parasol-gateway.svc`, the `/v1` prefix and the backend: an Istio `Hostname` pointing at the external provider.
+* "This route only exists inside the cluster. Applications talk to a stable internal name; the platform decides where it goes and how."
+
+. Open **Connectivity Link → Policies** for `parasol-gateway` and show the two policies on the `llm` route:
+* `AuthPolicy`: "Every call carries a platform key, one per team. The provider's key is not in this policy, not in the route, not in the application. Authorino looks it up from a secret that only cluster admins can read and adds it on the way out."
+* `TokenRateLimitPolicy`: "20,000 tokens per minute per team, counted from the real `usage.total_tokens` the model returns. Not requests. Tokens. And a second, deliberately small budget of 1,500 for a stage key, so you can watch it run out."
+
+. Show the application configuration change that switched it to the gateway. In **GitLab**, open the `llm-routing` gitops repository of `{dev2_user}`, file `helm/templates/es-litellm.yaml`:
+* Point out the Vault path `secrets/litellm/gateway` (it was `secrets/litellm/credentials`).
+* "One line. The base URL now points at the gateway and the key is the team's platform key. The Quarkus code is unchanged; it still sends a normal `Authorization: Bearer` header."
+
+. Watch the application keep working through the gateway. In the Web Terminal:
++
+[source,bash,role="copypaste",subs="attributes+"]
+----
+oc logs -n parasol-insurance-secured-{dev2_user} deploy/parasol-insurance-secured --since=2m | grep -A1 'LLM classification'
+----
++
+* "Same classifications as before. The application does not know it moved."
+
+. Exhaust the budget on purpose with the stage key (`team-demo`, 1,500 tokens per minute), from the Web Terminal. The application's team key is a separate counter, so the application is not affected:
++
+[source,bash,role="copypaste",subs="attributes+"]
+----
+PK=$(oc get secret llm-key-team-demo -n kuadrant-system -o jsonpath='{.data.api_key}' | base64 -d)
+oc run llm-burst -n parasol-gateway --rm -i --restart=Never --image=quay.io/curl/curl:latest --env="PK=$PK" -- sh -c '
+for i in $(seq 1 10); do curl -s -o /dev/null -w "%{http_code} " --max-time 120 -H "Authorization: Bearer $PK" -H "Content-Type: application/json" \
+  -d "{\"model\":\"qwen3-14b\",\"messages\":[{\"role\":\"user\",\"content\":\"Write 120 words about insurance claims.\"}],\"max_tokens\":220}" \
+  http://llm.parasol-gateway.svc/v1/chat/completions; done; echo'
+----
++
+* Point out the sequence: a handful of `200`, then `429`.
+* "Around 1,500 tokens later, the gateway answers 429 Too Many Requests, in 20 milliseconds, without touching the provider. That is a budget, enforced by the platform, per team. Change the number in Git and the budget changes."
+
+. Back in the application Inbox, show that emails keep being classified while the stage key is exhausted: the application's team has its own counter.
+* "This is what a controlled failure looks like. One team hit its budget; the platform said no; nobody else was affected. If the application's own budget ran out, it would fall back to the keyword router until the next minute, which is exactly the behaviour you saw in Part 1."
+
+**What they should notice:**
+
+* The application was switched to the gateway with a Vault path change and one line in its GitOps repo; no code, no rebuild
+* The provider credential exists in exactly one place, readable only by cluster admins, and is injected by the gateway
+* The budget is counted in tokens from the model's own usage report, not in requests, and each team has its own counter
+* 429 responses come from the gateway in milliseconds; the provider is never called once the budget is spent
+* The same gateway, the same policy model and the same console pages as the Section 1 API beat
+
+**Business value callout:**
+
+"Parasol's CIO asked for AI in the applications. The CFO will ask who is paying for it. With Connectivity Link the platform can answer both: every team calls the model through the gateway with its own key, every token is counted against a budget the platform team set in Git, and the provider credential never leaves the platform. Adding a second provider, or moving to a model on OpenShift AI, is a route change, not a project."
+
+**If asked:**
+
+Q: "Does this work with streaming responses?"::
+A: "Yes, for OpenAI-style streaming when the client asks for usage in the final event. The token count comes from the same `usage` field."
+
+Q: "Can we set budgets per user instead of per team?"::
+A: "The counter is any attribute the AuthPolicy exposes. One key per user gives per-user budgets; a claim in a JWT gives budgets per group. The policy does not change, only the counter expression."
+
+Q: "What about models running on OpenShift AI in the cluster?"::
+A: "Same pattern. The backend of the route becomes the in-cluster inference service instead of the external hostname. The policies, keys and budgets stay exactly as they are."
+
+Q: "Is the token limit a hard cutoff mid-response?"::
+A: "No. The budget is checked before the request is forwarded and debited after the response, so a request that starts is completed. The next request over the budget gets the 429."
 
 [#summary]
 == Section 3 summary

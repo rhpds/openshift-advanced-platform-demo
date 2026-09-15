@@ -310,3 +310,22 @@ entries:
       acs.sh selected the Argo ignoreDifferences entry by list index; now by kind. This commit is
       the new freeze point after the external changes; T02-T05 do not depend on any of them and
       T06 is not blocked. Reset/validation must be repeated before recording as usual.
+
+  - id: "2026-09-15-017"
+    timestamp: "2026-09-15T14:40:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-15T14:40:00Z"
+    resolved_by: "sandrotanaka"
+    type: note
+    content: >-
+      Root cause of the parasol-gateway pod churn (ages of 17-118 s, 503 blips, "fewer than 2
+      replicas" warnings) found after the cluster restart: the demo's ztunnel-healer CronJob
+      (istio-mesh-tools, Argo app ztunnel-healer, every 2 min) deletes Running pods in ambient
+      namespaces whose HBONE port 15008 refuses; Istio gateway pods are never enrolled in ztunnel,
+      so both were killed every run since the gateway was installed (60 kills/hour). Fix in
+      scripts/rhcl/gateway.sh: parasol-gateway appended to the healer's EXCLUDE_NS, with an
+      ignoreDifferences on the Argo app for the container env so selfHeal keeps it. Earlier
+      attributions of gateway restarts to policy reloads were partly wrong. Same day: cluster
+      restart repaired with post-provision.sh (Parasol HBONE loss in 5 namespaces, RHDH OIDC 500),
+      validation 0 failed, T06 rehearsal reset executed (MR !2 closed, request branch deleted).

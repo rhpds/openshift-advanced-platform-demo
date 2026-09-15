@@ -90,3 +90,17 @@ oc get deploy,svc,pods -n $NS --no-headers | awk '{print "   "$1, $2, $3}'
 echo "== through the Route (404 from Envoy means programmed and reachable; no HTTPRoute exists yet)"
 sleep 5
 curl -skI "https://parasol-gateway.${D}/" | grep -iE '^(HTTP|server)' || echo "   no answer yet, retry in a minute"
+
+# The demo's ztunnel-healer CronJob (Argo app openshift-gitops/ztunnel-healer, every 2 min) deletes any
+# Running pod in an ambient namespace whose HBONE port 15008 refuses. Istio gateway pods are never
+# enrolled in ztunnel (dataplane-mode none), so it killed both gateway pods every run (503 blips,
+# "fewer than 2 replicas"). Exclude the gateway namespace, and keep Argo from reverting the env.
+echo "== ztunnel-healer: exclude the gateway namespace"
+oc get application.argoproj.io ztunnel-healer -n openshift-gitops -o jsonpath='{.spec.ignoreDifferences}' | grep -c CronJob >/dev/null || \
+  oc patch application.argoproj.io ztunnel-healer -n openshift-gitops --type merge -p '{"spec":{"ignoreDifferences":[{"group":"batch","kind":"CronJob","name":"ztunnel-healer","namespace":"istio-mesh-tools","jsonPointers":["/spec/jobTemplate/spec/template/spec/containers/0/env"]}]}}' >/dev/null
+EX=$(oc get cronjob ztunnel-healer -n istio-mesh-tools -o json | jq -r '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name=="EXCLUDE_NS") | .value')
+if ! echo " $EX " | grep -q " $NS "; then
+  IDX=$(oc get cronjob ztunnel-healer -n istio-mesh-tools -o json | jq '.spec.jobTemplate.spec.template.spec.containers[0].env | map(.name=="EXCLUDE_NS") | index(true)')
+  oc patch cronjob ztunnel-healer -n istio-mesh-tools --type json -p "[{\"op\":\"replace\",\"path\":\"/spec/jobTemplate/spec/template/spec/containers/0/env/$IDX/value\",\"value\":\"$EX $NS\"}]" >/dev/null
+fi
+echo "   EXCLUDE_NS: $(oc get cronjob ztunnel-healer -n istio-mesh-tools -o json | jq -r '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name=="EXCLUDE_NS") | .value')"

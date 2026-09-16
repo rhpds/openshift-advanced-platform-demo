@@ -1,0 +1,12 @@
+---
+
+- name: Delete app-of-apps Application
+  kubernetes.core.k8s:
+    state: absent
+    api_version: argoproj.io/v1alpha1
+    kind: Application
+    name: app-of-apps
+    namespace: openshift-gitops
+    wait: true
+    wait_timeout: 600
+  ignore_errors: true

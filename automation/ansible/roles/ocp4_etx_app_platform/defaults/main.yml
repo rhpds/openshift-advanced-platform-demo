@@ -1,0 +1,379 @@
+---
+# ------------------------------------------------
+# App-of-apps GitOps source
+# ------------------------------------------------
+
+# set to true to continue deployment even if child apps fail to sync/healthy
+ocp4_etx_app_platform_wait_for_apps_ignore_errors: false
+
+ocp4_etx_app_platform_gitops_repo: https://github.com/redhat-ads-tech/ocp-app-platform-demo-helm.git
+ocp4_etx_app_platform_gitops_repo_tag: main
+
+# ------------------------------------------------
+# OpenShift Gitops
+# ------------------------------------------------
+
+# set to false to skip GitOps operator install (e.g. if already installed)
+ocp4_etx_app_platform_openshift_gitops_install: true
+
+ocp4_etx_app_platform_openshift_gitops_operator_channel: latest
+ocp4_etx_app_platform_openshift_gitops_operator_automatic_install_plan_approval: true
+ocp4_etx_app_platform_openshift_gitops_operator_starting_csv: ""
+ocp4_etx_app_platform_openshift_gitops_operator_name: openshift-gitops-operator
+ocp4_etx_app_platform_openshift_gitops_operator_namespace: openshift-operators
+# Operator catalog source pinning (applies to GitOps operator installed by Ansible)
+ocp4_etx_app_platform_openshift_gitops_operator_catalog: redhat-operators
+ocp4_etx_app_platform_openshift_gitops_operator_use_catalog_snapshot: false
+ocp4_etx_app_platform_openshift_gitops_operator_catalogsource_name: ""
+ocp4_etx_app_platform_openshift_gitops_operator_catalogsource_namespace: openshift-operators
+ocp4_etx_app_platform_openshift_gitops_operator_catalog_snapshot_image: ""
+ocp4_etx_app_platform_openshift_gitops_operator_catalog_snapshot_image_tag: ""
+
+# Operator catalog source pinning (applies to all operators installed via Helm app-of-apps)
+ocp4_etx_app_platform_catalog_source_enabled: false
+ocp4_etx_app_platform_catalog_source_name: redhat-operators-snapshot
+ocp4_etx_app_platform_catalog_source_namespace: openshift-marketplace
+ocp4_etx_app_platform_catalog_source_image: quay.io/gpte-devops-automation/olm_snapshot_redhat_catalog
+ocp4_etx_app_platform_catalog_source_tag: v4.20_2026_02_11
+
+ocp4_etx_app_platform_openshift_gitops_operator_config:
+  env:
+    - name: ARGOCD_CLUSTER_CONFIG_NAMESPACES
+      value: '{{ ocp4_etx_app_platform_rhdh_gitops_namespace }},openshift-gitops'
+
+ocp4_etx_app_platform_openshift_gitops_setup_cluster_admin: true
+
+ocp4_etx_app_platform_openshift_gitops_enable_route: true
+ocp4_etx_app_platform_openshift_gitops_update_route_tls: true
+
+ocp4_etx_app_platform_openshift_gitops_update_resources: true
+
+# ApplicationSet Controller
+ocp4_etx_app_platform_openshift_gitops_applicationset_controller_update: false
+ocp4_etx_app_platform_openshift_gitops_applicationset_controller_requests_cpu: 250m
+ocp4_etx_app_platform_openshift_gitops_applicationset_controller_requests_memory: 512Mi
+ocp4_etx_app_platform_openshift_gitops_applicationset_controller_limits_cpu: "2"
+ocp4_etx_app_platform_openshift_gitops_applicationset_controller_limits_memory: 1Gi
+
+# Application Controller
+ocp4_etx_app_platform_openshift_gitops_controller_update: true
+ocp4_etx_app_platform_openshift_gitops_controller_requests_cpu: 512m
+ocp4_etx_app_platform_openshift_gitops_controller_requests_memory: 1Gi
+ocp4_etx_app_platform_openshift_gitops_controller_limits_cpu: "4"
+ocp4_etx_app_platform_openshift_gitops_controller_limits_memory: 4Gi
+# Setting a default value for reconcile timeout as it needs to be configurable
+# Reduce this value if you want to sync more frequently
+ocp4_etx_app_platform_openshift_gitops_controller_app_sync: 3m
+
+ocp4_etx_app_platform_openshift_gitops_controller_remove_memory_limits: false
+
+# Redis
+ocp4_etx_app_platform_openshift_gitops_redis_update: false
+ocp4_etx_app_platform_openshift_gitops_redis_requests_cpu: 250m
+ocp4_etx_app_platform_openshift_gitops_redis_requests_memory: 128Mi
+ocp4_etx_app_platform_openshift_gitops_redis_limits_cpu: 500m
+ocp4_etx_app_platform_openshift_gitops_redis_limits_memory: 256Mi
+
+# Repo Server
+ocp4_etx_app_platform_openshift_gitops_repo_update: true
+ocp4_etx_app_platform_openshift_gitops_repo_requests_cpu: 500m
+ocp4_etx_app_platform_openshift_gitops_repo_requests_memory: 512Mi
+ocp4_etx_app_platform_openshift_gitops_repo_limits_cpu: "2"
+ocp4_etx_app_platform_openshift_gitops_repo_limits_memory: 2Gi
+
+# DEX
+ocp4_etx_app_platform_openshift_gitops_dex_update: false
+ocp4_etx_app_platform_openshift_gitops_dex_requests_cpu: 125m
+ocp4_etx_app_platform_openshift_gitops_dex_requests_memory: 128Mi
+ocp4_etx_app_platform_openshift_gitops_dex_limits_cpu: 500m
+ocp4_etx_app_platform_openshift_gitops_dex_limits_memory: 256Mi
+
+# Server
+ocp4_etx_app_platform_openshift_gitops_server_update: false
+ocp4_etx_app_platform_openshift_gitops_server_requests_cpu: 250m
+ocp4_etx_app_platform_openshift_gitops_server_requests_memory: 128Mi
+ocp4_etx_app_platform_openshift_gitops_server_limits_cpu: 500m
+ocp4_etx_app_platform_openshift_gitops_server_limits_memory: 256Mi
+
+ocp4_etx_app_platform_openshift_gitops_resource_customizations: |
+  operators.coreos.com/Subscription:
+    health.lua: |
+      health_status = {}
+      if obj.status ~= nil then
+        if obj.status.conditions ~= nil then
+          numDegraded = 0
+          numPending = 0
+          msg = ""
+          for i, condition in pairs(obj.status.conditions) do
+            msg = msg .. i .. ": " .. condition.type .. " | " .. condition.status .. "\n"
+            if condition.type == "InstallPlanPending" and condition.status == "True" then
+              numPending = numPending + 1
+            elseif (condition.type == "InstallPlanMissing" and condition.reason ~= "ReferencedInstallPlanNotFound") then
+              numDegraded = numDegraded + 1
+            elseif (condition.type == "CatalogSourcesUnhealthy" or condition.type == "InstallPlanFailed") and condition.status == "True" then
+              numDegraded = numDegraded + 1
+            end
+          end
+          if numDegraded == 0 and numPending == 0 then
+            health_status.status = "Healthy"
+            health_status.message = msg
+            return health_status
+          elseif numPending > 0 and numDegraded == 0 then
+            health_status.status = "Progressing"
+            health_status.message = "An install plan for a subscription is pending installation"
+            return health_status
+          else
+            health_status.status = "Degraded"
+            health_status.message = msg
+            return health_status
+          end
+        end
+      end
+      health_status.status = "Progressing"
+      health_status.message = "An install plan for a subscription is pending installation"
+      return health_status
+
+  quay.redhat.com/QuayRegistry:
+    health.lua: |
+      local hs={ status = "Progressing", message = "Waiting for initialization" }
+      found_status = false
+
+      if obj.status ~= nil then
+        found_status = true
+        if obj.status.conditions ~= nil then
+          for i, condition in ipairs(obj.status.conditions) do
+
+            if condition.type == "Available" and condition.status ~= "True" then
+              if condition.reason == "ComponentNotReady" then
+                hs.status = "Progressing"
+              else
+                hs.status = "Degraded"
+              end
+              hs.message = condition.message or condition.reason
+            end
+            if condition.type == "Available" and condition.status == "True" then
+              hs.status = "Healthy"
+              hs.message = "All instances are available"
+            end
+          end
+        end
+      end
+
+      if not found_status then
+        hs = { status = "Progressing", message = "Instance is waiting for initialization" }
+      end
+
+      return hs
+
+  operators.coreos.com/CatalogSource:
+    health.lua: |
+      local hs = { status = "Progressing", message = "Waiting for catalog source to become ready" }
+      if obj.status ~= nil and obj.status.connectionState ~= nil then
+        local state = obj.status.connectionState.lastObservedState
+        if state == "READY" then
+          hs.status = "Healthy"
+          hs.message = "gRPC connection is ready"
+        elseif state == "TRANSIENT_FAILURE" or state == "SHUTDOWN" then
+          hs.status = "Degraded"
+          hs.message = "Connection state: " .. state
+        end
+      end
+      return hs
+
+ocp4_etx_app_platform_openshift_gitops_ignore_differences: {}
+
+# ------------------------------------------------
+# OpenShift Pipelines
+# ------------------------------------------------
+
+ocp4_etx_app_platform_openshift_pipelines_namespace: openshift-operators
+
+# ------------------------------------------------
+# NooBaa
+# ------------------------------------------------
+
+# set to false when deploying on a cluster with ODF installed
+ocp4_etx_app_platform_noobaa_install: true
+ocp4_etx_app_platform_noobaa_namespace: openshift-storage
+ocp4_etx_app_platform_noobaa_name: noobaa
+
+# ------------------------------------------------
+# Web Terminal
+# ------------------------------------------------
+ocp4_etx_app_platform_terminal_install: true
+
+# ------------------------------------------------
+# GitLab
+# ------------------------------------------------
+
+ocp4_etx_app_platform_gitlab_namespace: gitlab
+ocp4_etx_app_platform_gitlab_gitops_name: gitlab
+
+ocp4_etx_app_platform_gitlab_config_smtp_host:
+  smtp.gitlab-{{ ocp4_etx_app_platform_gitlab_namespace }}.{{ r_openshift_subdomain }}
+ocp4_etx_app_platform_gitlab_config_ssh_host:
+  ssh.gitlab-{{ ocp4_etx_app_platform_gitlab_namespace }}.{{ r_openshift_subdomain }}
+ocp4_etx_app_platform_gitlab_config_root_password: "{{ common_password }}"
+ocp4_etx_app_platform_gitlab_config_host:
+  "gitlab-{{ ocp4_etx_app_platform_gitlab_namespace }}.{{ r_openshift_subdomain }}"
+
+ocp4_etx_app_platform_gitlab_users_password: "{{ common_password }}"
+
+# ------------------------------------------------
+# Red Hat Build Of Keycloak
+# ------------------------------------------------
+
+ocp4_etx_app_platform_rhbk_client_backstage_name: backstage
+ocp4_etx_app_platform_rhbk_application_name: keycloak
+ocp4_etx_app_platform_rhbk_namespace: keycloak
+
+ocp4_etx_app_platform_rhbk_cr_name: keycloak
+ocp4_etx_app_platform_rhbk_external_access: false
+ocp4_etx_app_platform_rhbk_host: sso
+
+ocp4_etx_app_platform_rhbk_realm_backstage_name: backstage
+
+ocp4_etx_app_platform_rhbk_client_backstage_secret:
+  "{{ lookup('ansible.builtin.password', '/tmp/passwordfile-client-backstage', chars=['ascii_letters', 'digits'], length=32) }}"
+
+ocp4_etx_app_platform_rhbk_client_backstage_plugin_name:
+  "{{ ocp4_etx_app_platform_rhbk_realm_backstage_name }}-plugin"
+ocp4_etx_app_platform_rhbk_client_backstage_plugin_secret:
+  "{{ lookup('ansible.builtin.password', '/tmp/passwordfile-client-backstage-plugin', chars=['ascii_letters', 'digits'], length=32) }}"
+
+ocp4_etx_app_platform_rhbk_user_password: "{{ common_password }}"
+
+ocp4_etx_app_platform_rhbk_client_tpacli_secret:
+  "{{ lookup('ansible.builtin.password', '/tmp/passwordfile-client-tpacli', chars=['ascii_letters', 'digits'], length=32) }}"
+
+
+
+# ------------------------------------------------
+# Quay
+# ------------------------------------------------
+
+ocp4_etx_app_platform_quay_application_name: quay
+ocp4_etx_app_platform_quay_namespace: quay-registry
+
+ocp4_etx_app_platform_quay_registry_host: "quay.{{ r_openshift_subdomain }}"
+ocp4_etx_app_platform_quay_admin_user: quayadmin
+ocp4_etx_app_platform_quay_admin_user_password: "{{ common_password }}"
+
+ocp4_etx_app_platform_quay_organizations:
+  - parasol
+ocp4_etx_app_platform_quay_users:
+  - username: dev1
+    email: dev1@rhdh.com
+    password: "{{ common_password }}"
+  - username: dev2
+    email: dev2@rhdh.com
+    password: "{{ common_password }}"
+
+# ------------------------------------------------
+# LLM / LiteLLM
+# ------------------------------------------------
+
+ocp4_etx_app_platform_litellm_api_url: >-
+  {{ lookup('agnosticd_user_data', 'litellm_api_base_url') | default('') }}
+ocp4_etx_app_platform_litellm_api_key: >-
+  {{ lookup('agnosticd_user_data', 'litellm_virtual_key') | default('') }}
+
+
+# ------------------------------------------------
+# Vault
+# ------------------------------------------------
+
+ocp4_etx_app_platform_vault_namespace: vault
+ocp4_etx_app_platform_vault_name: vault
+ocp4_etx_app_platform_vault_auth_namespace: default
+
+# ------------------------------------------------
+# External Secrets
+# ------------------------------------------------
+
+ocp4_etx_app_platform_external_secrets_namespace: external-secrets
+
+# ------------------------------------------------
+# RHDH GitOps
+# ------------------------------------------------
+
+ocp4_etx_app_platform_rhdh_gitops_namespace: rhdh-gitops
+ocp4_etx_app_platform_rhdh_gitops_name: rhdh-gitops
+ocp4_etx_app_platform_rhdh_gitops_password: "{{ common_password }}"
+
+# ------------------------------------------------
+# Red Hat Developer Hub
+# ------------------------------------------------
+
+ocp4_etx_app_platform_rhdh_argo_application_name: backstage-bootstrap
+ocp4_etx_app_platform_rhdh_namespace: rhdh
+ocp4_etx_app_platform_rhdh_psql_password: password
+
+# ------------------------------------------------
+# Developer Hub (Operator-based deployment)
+# ------------------------------------------------
+
+ocp4_etx_app_platform_developer_hub_namespace: rhdh
+ocp4_etx_app_platform_developer_hub_config_git_host: github.com
+ocp4_etx_app_platform_developer_hub_config_git_group: redhat-ads-tech
+ocp4_etx_app_platform_developer_hub_config_git_repo: ocp-app-platform-demo-developer-hub-config
+ocp4_etx_app_platform_developer_hub_config_git_revision: main
+
+# ------------------------------------------------
+# Orchestrator
+# ------------------------------------------------
+
+ocp4_etx_app_platform_orchestrator_application_name: orchestrator
+ocp4_etx_app_platform_orchestrator_namespace: >-
+  {{ ocp4_etx_app_platform_rhdh_namespace }}
+ocp4_etx_app_platform_orchestrator_token: >-
+  {{ lookup('ansible.builtin.password', '/tmp/passwordfile-orchestrator-token', chars=['ascii_letters', 'digits'], length=24) }}
+
+# ------------------------------------------------
+# OpenShift Dev Spaces
+# ------------------------------------------------
+
+ocp4_etx_app_platform_devspaces_install: true
+ocp4_etx_app_platform_devspaces_name: devspaces
+ocp4_etx_app_platform_devspaces_namespace: openshift-devspaces
+
+ocp4_etx_app_platform_rhbk_client_openshift_name: openshift
+ocp4_etx_app_platform_rhbk_client_openshift_secret:
+  "{{ lookup('ansible.builtin.password', '/tmp/passwordfile-client-openshift', chars=['ascii_letters', 'digits'], length=32) }}"
+
+ocp4_etx_app_platform_openshift_oauth_name: openshift-oauth
+ocp4_etx_app_platform_openshift_oauth_namespace: openshift-config
+
+# ------------------------------------------------
+# Red Hat Trusted Artifact Signer
+# ------------------------------------------------
+
+ocp4_etx_app_platform_rhtas_application_name: trusted-artifact-signer
+ocp4_etx_app_platform_rhtas_namespace: trusted-artifact-signer
+
+ocp4_etx_app_platform_rhtas_instance_name: securesign
+ocp4_etx_app_platform_rhtas_oidc_issuer:
+  "{{ ocp4_etx_app_platform_rhbk_host }}.{{ r_openshift_subdomain }}/realms/{{ ocp4_etx_app_platform_rhbk_realm_backstage_name }}" # yamllint disable-line rule:line-length
+ocp4_etx_app_platform_rhtas_root_cert_email: admin@rhdemo.com
+ocp4_etx_app_platform_rhtas_root_cert_org: Parasol
+
+# ------------------------------------------------
+# Red Hat Trusted Profile Analyzer
+# ------------------------------------------------
+
+ocp4_etx_app_platform_tpa_application_name: trusted-profile-analyzer
+ocp4_etx_app_platform_tpa_namespace: trusted-profile-analyzer
+ocp4_etx_app_platform_tpa_s3_region: "https://s3-{{ ocp4_etx_app_platform_noobaa_namespace }}.{{ r_openshift_subdomain }}:443"
+ocp4_etx_app_platform_tpa_appDomain: "-{{ ocp4_etx_app_platform_tpa_namespace }}.{{ r_openshift_subdomain }}"
+ocp4_etx_app_platform_tpa_oidc_issuer:
+  "https://{{ ocp4_etx_app_platform_rhbk_host }}.{{ r_openshift_subdomain }}/realms/{{ ocp4_etx_app_platform_rhbk_realm_backstage_name }}" # yamllint disable-line rule:line-length
+
+# ------------------------------------------------
+# Red Hat Advanced Cluster Security
+# ------------------------------------------------
+
+ocp4_etx_app_platform_acs_application_name: acs
+ocp4_etx_app_platform_acs_namespace: stackrox 
+ocp4_etx_app_platform_acs_clustername: local-cluster
+ocp4_etx_app_platform_acs_adminpassword: "{{ common_password }}"
+

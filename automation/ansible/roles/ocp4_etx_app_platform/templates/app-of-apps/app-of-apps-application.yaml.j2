@@ -1,0 +1,265 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-of-apps
+  namespace: openshift-gitops
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io/foreground
+spec:
+  destination:
+    namespace: openshift-gitops
+    server: https://kubernetes.default.svc
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 10m
+      limit: 15
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+  source:
+    repoURL: {{ ocp4_etx_app_platform_gitops_repo }}
+    targetRevision: {{ ocp4_etx_app_platform_gitops_repo_tag }}
+    path: app-of-apps
+    helm:
+      # Values passed here configure all demo platform services deployed
+      # by the app-of-apps Helm chart (GitOps, Keycloak, Quay, RHDH, etc.)
+      valuesObject:
+        gitops:
+          repoURL: {{ ocp4_etx_app_platform_gitops_repo }}
+          targetRevision: {{ ocp4_etx_app_platform_gitops_repo_tag }}
+
+        argocd:
+          namespace: openshift-gitops
+
+        # Pin operator versions using a frozen OLM catalog snapshot.
+        # When enabled, a custom CatalogSource is deployed and all operator
+        # subscriptions use it instead of the live catalog that can change
+        # frequently. This is important for repeatable deployments, especially
+        # because we auto approve operator install plans so new versions can
+        # be installed without our testing on new deployments.
+        catalogSource:
+          enabled: {{ ocp4_etx_app_platform_catalog_source_enabled }}
+          name: {{ ocp4_etx_app_platform_catalog_source_name }}
+          namespace: {{ ocp4_etx_app_platform_catalog_source_namespace }}
+          image: {{ ocp4_etx_app_platform_catalog_source_image }}
+          tag: {{ ocp4_etx_app_platform_catalog_source_tag }}
+
+        cluster:
+          subdomain: {{ r_openshift_subdomain }}
+          apiServer: {{ r_openshift_api_server }}
+
+        common:
+          password: "{{ common_password }}"
+
+        vault:
+          name: {{ ocp4_etx_app_platform_vault_name }}
+          namespace: {{ ocp4_etx_app_platform_vault_namespace }}
+          authNamespace: {{ ocp4_etx_app_platform_vault_auth_namespace }}
+          secrets:
+            gitlab:
+              rootPassword: "{{ ocp4_etx_app_platform_gitlab_config_root_password }}"
+            keycloak:
+              clientId: {{ ocp4_etx_app_platform_rhbk_client_backstage_name }}
+              clientSecret: "{{ ocp4_etx_app_platform_rhbk_client_backstage_secret }}"
+              pluginClientSecret: "{{ ocp4_etx_app_platform_rhbk_client_backstage_plugin_secret }}"
+              openshiftClientSecret: "{{ ocp4_etx_app_platform_rhbk_client_openshift_secret }}"
+            rhdh:
+              argocdPassword: "{{ openshift_gitops_admin_password }}"
+              postgresqlPassword: "{{ ocp4_etx_app_platform_rhdh_psql_password }}"
+            orchestrator:
+              token: "{{ ocp4_etx_app_platform_orchestrator_token }}"
+            common:
+              password: "{{ common_password }}"
+            litellm:
+              apiUrl: "{{ ocp4_etx_app_platform_litellm_api_url }}"
+              apiKey: "{{ ocp4_etx_app_platform_litellm_api_key }}"
+            kafka:
+              userPassword: "{{ common_password }}"
+            tpa:
+              cliClientSecret: "{{ ocp4_etx_app_platform_rhbk_client_tpacli_secret }}"
+
+
+        externalSecrets:
+          name: external-secrets
+          namespace: {{ ocp4_etx_app_platform_external_secrets_namespace }}
+
+        openshiftPipelines:
+          name: openshift-pipelines
+          namespace: {{ ocp4_etx_app_platform_openshift_pipelines_namespace }}
+
+        noobaa:
+          enabled: {{ ocp4_etx_app_platform_noobaa_install }}
+          name: {{ ocp4_etx_app_platform_noobaa_name }}
+          namespace: {{ ocp4_etx_app_platform_noobaa_namespace }}
+
+        gitlab:
+          name: {{ ocp4_etx_app_platform_gitlab_gitops_name }}
+          namespace: {{ ocp4_etx_app_platform_gitlab_namespace }}
+          host: {{ ocp4_etx_app_platform_gitlab_config_host }}
+          smtp:
+            host: {{ ocp4_etx_app_platform_gitlab_config_smtp_host }}
+          ssh:
+            host: {{ ocp4_etx_app_platform_gitlab_config_ssh_host }}
+          rootPassword: "{{ ocp4_etx_app_platform_gitlab_config_root_password }}"
+          usersPassword: "{{ ocp4_etx_app_platform_gitlab_users_password }}"
+          cluster:
+            subdomain: {{ r_openshift_subdomain }}
+          gitops:
+            namespace: {{ ocp4_etx_app_platform_rhdh_gitops_namespace }}
+          quay:
+            host: {{ ocp4_etx_app_platform_quay_registry_host }}
+
+        keycloak:
+          name: {{ ocp4_etx_app_platform_rhbk_application_name }}
+          namespace: {{ ocp4_etx_app_platform_rhbk_namespace }}
+          crName: {{ ocp4_etx_app_platform_rhbk_cr_name }}
+          externalAccess: {{ ocp4_etx_app_platform_rhbk_external_access }}
+          route:
+            host: {{ ocp4_etx_app_platform_rhbk_host }}.{{ r_openshift_subdomain }}
+          realm:
+            name: {{ ocp4_etx_app_platform_rhbk_realm_backstage_name }}
+          client:
+            backstage:
+              name: {{ ocp4_etx_app_platform_rhbk_client_backstage_name }}
+              redirectUri: ""
+              webOrigin: ""
+              secret: "{{ ocp4_etx_app_platform_rhbk_client_backstage_secret }}"
+            backstagePlugin:
+              name: {{ ocp4_etx_app_platform_rhbk_client_backstage_plugin_name }}
+              secret: "{{ ocp4_etx_app_platform_rhbk_client_backstage_plugin_secret }}"
+            openshift:
+              name: {{ ocp4_etx_app_platform_rhbk_client_openshift_name }}
+              redirectUri: "https://oauth-openshift.{{ r_openshift_subdomain }}/oauth2callback/developers"
+              secret: "{{ ocp4_etx_app_platform_rhbk_client_openshift_secret }}"
+            tpaCli:
+              secret: "{{ ocp4_etx_app_platform_rhbk_client_tpacli_secret }}"
+          users:
+            password: "{{ ocp4_etx_app_platform_rhbk_user_password }}"
+
+        quay:
+          name: {{ ocp4_etx_app_platform_quay_application_name }}
+          namespace: {{ ocp4_etx_app_platform_quay_namespace }}
+          host: {{ ocp4_etx_app_platform_quay_registry_host }}
+          adminUser: {{ ocp4_etx_app_platform_quay_admin_user }}
+          adminUserPassword: "{{ ocp4_etx_app_platform_quay_admin_user_password }}"
+          organizations: {{ ocp4_etx_app_platform_quay_organizations }}
+          users: {{ ocp4_etx_app_platform_quay_users | to_json }}
+
+        developerHub:
+          name: developer-hub
+          namespace: {{ ocp4_etx_app_platform_developer_hub_namespace }}
+          config:
+            backstage:
+              host: backstage-developer-hub-{{ ocp4_etx_app_platform_developer_hub_namespace }}.{{ r_openshift_subdomain }}
+            gitlab:
+              host: {{ ocp4_etx_app_platform_gitlab_config_host }}
+            argocd:
+              host: {{ ocp4_etx_app_platform_rhdh_gitops_name }}-server-{{ ocp4_etx_app_platform_rhdh_gitops_namespace }}.{{ r_openshift_subdomain }}
+            kubernetes:
+              apiUrl: {{ r_openshift_api_server }}
+            keycloak:
+              host: {{ ocp4_etx_app_platform_rhbk_host }}.{{ r_openshift_subdomain }}
+              realm: {{ ocp4_etx_app_platform_rhbk_realm_backstage_name }}
+              loginRealm: {{ ocp4_etx_app_platform_rhbk_realm_backstage_name }}
+          application:
+            git:
+              host: {{ ocp4_etx_app_platform_developer_hub_config_git_host }}
+              group: {{ ocp4_etx_app_platform_developer_hub_config_git_group }}
+              repo: {{ ocp4_etx_app_platform_developer_hub_config_git_repo }}
+              revision: {{ ocp4_etx_app_platform_developer_hub_config_git_revision }}
+
+        rhdhGitops:
+          name: {{ ocp4_etx_app_platform_rhdh_gitops_name }}
+          namespace: {{ ocp4_etx_app_platform_rhdh_gitops_namespace }}
+          password: "{{ ocp4_etx_app_platform_rhdh_gitops_password }}"
+
+        rhdh:
+          name: {{ ocp4_etx_app_platform_rhdh_argo_application_name }}
+          namespace: {{ ocp4_etx_app_platform_rhdh_namespace }}
+          configTemplate:
+            gitlab:
+              rootPassword: "{{ ocp4_etx_app_platform_gitlab_config_root_password }}"
+              host: {{ ocp4_etx_app_platform_gitlab_config_host }}
+            backstage:
+              host: backstage-developer-hub-{{ ocp4_etx_app_platform_rhdh_namespace }}.{{ r_openshift_subdomain }}
+            keycloak:
+              host: {{ ocp4_etx_app_platform_rhbk_host }}.{{ r_openshift_subdomain }}
+              realm: {{ ocp4_etx_app_platform_rhbk_realm_backstage_name }}
+              loginRealm: {{ ocp4_etx_app_platform_rhbk_realm_backstage_name }}
+              clientId: {{ ocp4_etx_app_platform_rhbk_client_backstage_plugin_name }}
+              clientSecret: "{{ ocp4_etx_app_platform_rhbk_client_backstage_plugin_secret }}"
+            gitops:
+              host: {{ ocp4_etx_app_platform_rhdh_gitops_name }}-server-{{ ocp4_etx_app_platform_rhdh_gitops_namespace }}.{{ r_openshift_subdomain }}
+            kubernetes:
+              api: {{ r_openshift_api_server }}
+            cluster:
+              subdomain: {{ r_openshift_subdomain }}
+          application:
+            gitops:
+              namespace: openshift-gitops
+            helm:
+              values:
+                git:
+                  host: {{ ocp4_etx_app_platform_gitlab_config_host }}
+
+        openshiftOAuth:
+          name: {{ ocp4_etx_app_platform_openshift_oauth_name }}
+          namespace: {{ ocp4_etx_app_platform_openshift_oauth_namespace }}
+
+        devspaces:
+          enabled: {{ ocp4_etx_app_platform_devspaces_install }}
+          name: {{ ocp4_etx_app_platform_devspaces_name }}
+          namespace: {{ ocp4_etx_app_platform_devspaces_namespace }}
+
+        rhtas:
+          name: {{ ocp4_etx_app_platform_rhtas_application_name }}
+          namespace: {{ ocp4_etx_app_platform_rhtas_namespace }}
+          instance: {{ ocp4_etx_app_platform_rhtas_instance_name }}
+          oidcIssuer: {{ ocp4_etx_app_platform_rhtas_oidc_issuer }}
+          rootCert:
+            email: {{ ocp4_etx_app_platform_rhtas_root_cert_email }}
+            org: {{ ocp4_etx_app_platform_rhtas_root_cert_org }}
+
+        amqStreams:
+          enabled: true
+          name: amq-streams
+          namespace: kafka
+
+        parasolInsurance:
+          name: parasol-insurance
+          namespace: parasol-insurance-dev
+
+        orchestrator:
+          name: {{ ocp4_etx_app_platform_orchestrator_application_name }}
+          namespace: {{ ocp4_etx_app_platform_orchestrator_namespace }}
+          backstage:
+            backend:
+              url: https://backstage-developer-hub-{{ ocp4_etx_app_platform_rhdh_namespace }}.{{ r_openshift_subdomain }}
+          openshift:
+            url: {{ r_openshift_api_server }}
+          gitlab:
+            url: https://{{ ocp4_etx_app_platform_gitlab_config_host }}
+
+        tpa:
+          enabled: true
+          name: {{ ocp4_etx_app_platform_tpa_application_name }}
+          namespace: {{ ocp4_etx_app_platform_tpa_namespace }}
+          appDomain: {{ ocp4_etx_app_platform_tpa_appDomain }}
+          oidcIssuer: {{ ocp4_etx_app_platform_tpa_oidc_issuer }}
+          s3:
+            region: {{ ocp4_etx_app_platform_tpa_s3_region }}
+
+        acs:
+          enabled: true
+          name: {{ ocp4_etx_app_platform_acs_application_name }}
+          namespace: {{ ocp4_etx_app_platform_acs_namespace }}
+          clusterName: {{ ocp4_etx_app_platform_acs_clustername }}
+          adminPassword: {{ ocp4_etx_app_platform_acs_adminpassword }}

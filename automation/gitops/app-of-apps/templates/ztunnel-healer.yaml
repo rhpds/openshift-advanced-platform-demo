@@ -7,7 +7,7 @@ spec:
     server: https://kubernetes.default.svc
   project: default
   source:
-    path: ztunnel-healer
+    path: automation/gitops/ztunnel-healer
     repoURL: {{ .Values.gitops.repoURL }}
     targetRevision: {{ .Values.gitops.targetRevision }}
 {{ include "app-of-apps.syncPolicy" . | indent 2 }}

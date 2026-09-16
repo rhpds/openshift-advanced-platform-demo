@@ -7,7 +7,7 @@ spec:
     server: https://kubernetes.default.svc
   project: default
   source:
-    path: openshift-pipelines
+    path: automation/gitops/openshift-pipelines
     repoURL: {{ .Values.gitops.repoURL }}
     targetRevision: {{ .Values.gitops.targetRevision }}
     helm:

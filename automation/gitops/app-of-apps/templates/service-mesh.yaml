@@ -12,7 +12,7 @@ spec:
       jsonPointers:
         - /spec/profile
   source:
-    path: service-mesh
+    path: automation/gitops/service-mesh
     repoURL: {{ .Values.gitops.repoURL }}
     targetRevision: {{ .Values.gitops.targetRevision }}
     helm:

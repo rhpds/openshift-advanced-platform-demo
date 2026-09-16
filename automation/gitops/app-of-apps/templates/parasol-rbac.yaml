@@ -7,7 +7,7 @@ spec:
     server: https://kubernetes.default.svc
   project: default
   source:
-    path: parasol-rbac
+    path: automation/gitops/parasol-rbac
     repoURL: {{ .Values.gitops.repoURL }}
     targetRevision: {{ .Values.gitops.targetRevision }}
 {{ include "app-of-apps.syncPolicy" . | indent 2 }}

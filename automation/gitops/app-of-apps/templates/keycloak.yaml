@@ -13,7 +13,7 @@ spec:
       jqPathExpressions:
         - .. | (.id, .containerId, .secret)? | strings
   source:
-    path: keycloak
+    path: automation/gitops/keycloak
     repoURL: {{ .Values.gitops.repoURL }}
     targetRevision: {{ .Values.gitops.targetRevision }}
     helm:

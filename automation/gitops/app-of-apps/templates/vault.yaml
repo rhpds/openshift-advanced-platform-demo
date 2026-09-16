@@ -12,7 +12,7 @@ spec:
       jqPathExpressions:
         - '.webhooks[]?.clientConfig.caBundle'
   source:
-    path: vault
+    path: automation/gitops/vault
     repoURL: {{ .Values.gitops.repoURL }}
     targetRevision: {{ .Values.gitops.targetRevision }}
     helm:

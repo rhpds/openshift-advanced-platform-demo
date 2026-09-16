@@ -7,7 +7,7 @@ spec:
     server: https://kubernetes.default.svc
   project: default
   source:
-    path: jira-stub
+    path: automation/gitops/jira-stub
     repoURL: {{ .Values.gitops.repoURL }}
     targetRevision: {{ .Values.gitops.targetRevision }}
 {{ include "app-of-apps.syncPolicy" . | indent 2 }}

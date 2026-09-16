@@ -9,7 +9,7 @@ spec:
     server: https://kubernetes.default.svc
   project: default
   source:
-    path: trusted-profile-analyzer/charts/tpa-prerequisites
+    path: automation/gitops/trusted-profile-analyzer/charts/tpa-prerequisites
     repoURL: {{ .Values.gitops.repoURL }}
     targetRevision: {{ .Values.gitops.targetRevision }}
     helm:

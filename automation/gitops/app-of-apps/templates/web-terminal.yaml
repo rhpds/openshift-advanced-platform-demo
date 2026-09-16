@@ -7,7 +7,7 @@ spec:
     server: https://kubernetes.default.svc
   project: default
   source:
-    path: web-terminal
+    path: automation/gitops/web-terminal
     repoURL: {{ .Values.gitops.repoURL }}
     targetRevision: {{ .Values.gitops.targetRevision }}
   # Custom syncPolicy without prune — the web-terminal operator manages

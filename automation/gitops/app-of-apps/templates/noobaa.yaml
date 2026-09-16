@@ -16,7 +16,7 @@ spec:
         - /spec/dbResources
         - /spec/endpoints
   source:
-    path: noobaa
+    path: automation/gitops/noobaa
     repoURL: {{ .Values.gitops.repoURL }}
     targetRevision: {{ .Values.gitops.targetRevision }}
     helm:

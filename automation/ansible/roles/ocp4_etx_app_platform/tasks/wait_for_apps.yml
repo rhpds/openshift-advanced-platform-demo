@@ -1,0 +1,75 @@
+---
+
+- name: Wait for child ArgoCD Applications to be created by app-of-apps
+  kubernetes.core.k8s_info:
+    api_version: argoproj.io/v1alpha1
+    kind: Application
+    namespace: openshift-gitops
+    label_selectors:
+      - app.kubernetes.io/part-of=app-of-apps
+  register: r_argocd_apps
+  retries: 30
+  delay: 10
+  until:
+    - r_argocd_apps is not failed
+    - r_argocd_apps.resources | length > 0
+
+- name: Build list of child Application names
+  ansible.builtin.set_fact:
+    r_child_app_names: >-
+      {{ r_argocd_apps.resources
+        | map(attribute='metadata.name')
+        | list }}
+
+- name: Print discovered child Applications
+  ansible.builtin.debug:
+    msg: "Found {{ r_child_app_names | length }} child Applications: {{ r_child_app_names }}"
+
+- name: Wait for child ArgoCD Applications to be Synced and Healthy
+  kubernetes.core.k8s_info:
+    api_version: argoproj.io/v1alpha1
+    kind: Application
+    namespace: openshift-gitops
+    label_selectors:
+      - app.kubernetes.io/part-of=app-of-apps
+  register: r_argocd_apps_status
+  retries: 60
+  delay: 60
+  until:
+    - r_argocd_apps_status.resources is defined
+    - r_argocd_apps_status.resources
+      | selectattr('status', 'defined')
+      | selectattr('status.sync', 'defined')
+      | selectattr('status.health', 'defined')
+      | length == r_argocd_apps_status.resources | length
+    - r_argocd_apps_status.resources
+      | selectattr('status', 'defined')
+      | rejectattr('status.sync.status', 'equalto', 'Synced')
+      | list
+      | length == 0
+    - r_argocd_apps_status.resources
+      | selectattr('status', 'defined')
+      | rejectattr('status.health.status', 'equalto', 'Healthy')
+      | list
+      | length == 0
+  ignore_errors: "{{ ocp4_etx_app_platform_wait_for_apps_ignore_errors }}"
+
+- name: Report unhealthy Applications
+  when: r_argocd_apps_status is failed
+  block:
+    - name: Collect unhealthy Application names
+      ansible.builtin.set_fact:
+        r_unhealthy_apps: >-
+          {{ r_argocd_apps_status.resources
+            | default([])
+            | selectattr('status', 'defined')
+            | rejectattr('status.health.status', 'equalto', 'Healthy')
+            | map(attribute='metadata.name')
+            | list }}
+
+    - name: Warn about unhealthy Applications
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: Timed out waiting for all Applications to be Synced and Healthy.
+          Unhealthy apps: {{ r_unhealthy_apps | default('unknown') }}.
+          Deployment will continue — these apps may still converge.

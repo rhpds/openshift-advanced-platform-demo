@@ -1,0 +1,85 @@
+---
+# Pre-workload tasks
+- name: Get OpenShift Web Console route
+  kubernetes.core.k8s_info:
+    api_version: route.openshift.io/v1
+    kind: Route
+    namespace: openshift-console
+    name: console
+  register: r_console_route
+  retries: 20
+  delay: 3
+  until: r_console_route is not failed
+
+- name: Get ingress domain
+  kubernetes.core.k8s_info:
+    kind: IngressController
+    name: default
+    namespace: openshift-ingress-operator
+    api_version: operator.openshift.io/v1
+  register: r_openshift_ingress_controller
+  retries: 20
+  delay: 3
+  until: r_openshift_ingress_controller is not failed
+
+- name: Set openshift domain
+  ansible.builtin.set_fact:
+    r_openshift_subdomain: "{{ r_openshift_ingress_controller.resources[0].status.domain }}"
+
+- name: Get API server URL
+  kubernetes.core.k8s_info:
+    api_version: config.openshift.io/v1
+    kind: Infrastructure
+    name: cluster
+  register: r_api_url
+  retries: 20
+  delay: 3
+  until: r_api_url is not failed
+
+- name: Set API server URL
+  ansible.builtin.set_fact:
+    r_openshift_api_server: "{{ r_api_url.resources[0].status.apiServerURL }}"
+
+# Main workload tasks
+- name: Install OpenShift Gitops
+  when: ocp4_etx_app_platform_openshift_gitops_install | bool
+  ansible.builtin.include_tasks: openshift_gitops.yml
+
+- name: Retrieve openshift-gitops-cluster secret
+  kubernetes.core.k8s_info:
+    api_version: "v1"
+    kind: Secret
+    name: openshift-gitops-cluster
+    namespace: openshift-gitops
+  register: r_secret
+  until:
+    - r_secret is defined
+    - r_secret.resources is defined
+    - r_secret.resources | length == 1
+  retries: 10
+  delay: 30
+  ignore_errors: true
+
+- name: Print r_secret from the previous task
+  ansible.builtin.debug:
+    var: r_secret
+
+- name: Get openshift_gitops_admin_password
+  ansible.builtin.set_fact:
+    openshift_gitops_admin_password: "{{ r_secret.resources[0]['data']['admin.password'] |string |b64decode }}"
+  ignore_errors: true
+
+- name: Print Access information
+  agnosticd.core.agnosticd_user_info:
+    data:
+      openshift_gitops_user: "admin"
+      openshift_gitops_password: "{{ openshift_gitops_admin_password }}"
+
+- name: Deploy app-of-apps
+  ansible.builtin.include_tasks: app_of_apps.yml
+
+- name: Install Showroom
+  ansible.builtin.include_tasks: showroom.yml
+
+- name: Wait for all ArgoCD Applications to sync
+  ansible.builtin.include_tasks: wait_for_apps.yml

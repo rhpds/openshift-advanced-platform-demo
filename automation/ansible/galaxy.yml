@@ -1,0 +1,18 @@
+---
+namespace: ocp_advanced_platform
+name: automation
+version: 1.0.0
+readme: README.md
+authors:
+- Markus Nagel <mnagel@redhat.com>
+description: Ansible automation collection for OpenShift Advanced Platform Demo
+license:
+- GPL-2.0-or-later
+license_file: ''
+tags: []
+dependencies: {}
+repository: https://github.com/rhpds/openshift-advanced-platform-demo
+documentation: https://github.com/rhpds/openshift-advanced-platform-demo
+homepage: https://github.com/rhpds/openshift-advanced-platform-demo
+issues: https://github.com/rhpds/openshift-advanced-platform-demo/issues
+build_ignore: []

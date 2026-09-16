@@ -1,6 +1,7 @@
 gitops:
-  repoURL: https://github.com/redhat-ads-tech/ocp-app-platform-demo-helm.git
+  repoURL: https://github.com/rhpds/openshift-advanced-platform-demo
   targetRevision: main
+  path: automation/gitops
 
 argocd:
   namespace: openshift-gitops

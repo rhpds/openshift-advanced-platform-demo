@@ -34,9 +34,9 @@ server:
 build:
   git:
     # Overridden by app-of-apps to match gitops.repoURL and targetRevision
-    uri: "https://github.com/redhat-ads-tech/ocp-app-platform-demo-helm.git"
-    ref: "dev"
-    contextDir: openvsx/open-vsx-server
+    uri: "https://github.com/rhpds/openshift-advanced-platform-demo"
+    ref: "main"
+    contextDir: automation/gitops/openvsx/open-vsx-server
 
 extensionUpload:
   enabled: true

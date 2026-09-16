@@ -1,0 +1,18 @@
+nameOverride: "developer-hub-prereqs"
+
+namespace: rhdh
+
+vault:
+  namespace: vault
+  name: vault
+
+operator:
+  channel: fast-1.9
+  startingCSV: rhdh-operator.v1.9.3
+  installPlanApproval: Automatic
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+
+argocd:
+  enabled: true
+  syncwave: "-1"

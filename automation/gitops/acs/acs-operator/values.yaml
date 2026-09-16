@@ -1,0 +1,16 @@
+nameOverride: ""
+
+name: rhacs-operator
+namespace: openshift-operators
+
+subscription:
+  channel: stable
+  installPlanApproval: Automatic
+  name: rhacs-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+
+argocd:
+  enabled: true
+  operator:
+    syncwave: "-2"

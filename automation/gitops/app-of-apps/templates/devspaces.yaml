@@ -1,0 +1,33 @@
+{{- if .Values.devspaces.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+{{ include "app-of-apps.metadata" (dict "name" .Values.devspaces.name "namespace" .Values.argocd.namespace "syncWave" "0") }}
+spec:
+  destination:
+    namespace: {{ .Values.devspaces.namespace }}
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    path: automation/gitops/devspaces
+    repoURL: {{ .Values.gitops.repoURL }}
+    targetRevision: {{ .Values.gitops.targetRevision }}
+    helm:
+      valuesObject:
+        devspaces-operator:
+          devspaces:
+            subscription:
+              source: {{ include "app-of-apps.operatorSource" . }}
+              {{- if .Values.catalogSource.enabled }}
+              startingCSV: ""
+              {{- end }}
+          webTerminal:
+            subscription:
+              source: {{ include "app-of-apps.operatorSource" . }}
+        devspaces-instance:
+          gitlab:
+            host: {{ .Values.gitlab.host }}
+          openVSXURL: https://open-vsx-server-{{ .Values.openvsx.namespace }}.{{ .Values.cluster.subdomain }}
+          rhdh:
+            url: https://backstage-developer-hub-{{ .Values.developerHub.namespace }}.{{ .Values.cluster.subdomain }}
+{{ include "app-of-apps.syncPolicy" . | indent 2 }}
+{{- end }}

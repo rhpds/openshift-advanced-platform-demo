@@ -1,0 +1,18 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: rhdh
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "developer-hub-prereqs.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  channel: {{ .Values.operator.channel }}
+  {{- if .Values.operator.startingCSV }}
+  startingCSV: {{ .Values.operator.startingCSV }}
+  {{- end }}
+  installPlanApproval: {{ .Values.operator.installPlanApproval }}
+  name: rhdh
+  source: {{ .Values.operator.source }}
+  sourceNamespace: {{ .Values.operator.sourceNamespace }}

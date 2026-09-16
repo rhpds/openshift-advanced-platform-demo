@@ -1,0 +1,56 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: init-bundle-generator
+  namespace: stackrox
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      serviceAccountName: init-bundle-generator
+      restartPolicy: OnFailure
+      containers:
+        - name: init-bundle
+          image: registry.redhat.io/openshift4/ose-cli:latest
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              # Wait for Central to be ready
+              echo "Waiting for Central..."
+              until curl -sk https://central.stackrox.svc:443/v1/ping; do
+                echo "Central not ready, retrying in 10s..."
+                sleep 10
+              done
+              echo "Central is ready"
+
+              # Get admin password
+{{- if .Values.adminPassword }}
+              PASSWORD=$(oc get secret central-admin-password -n stackrox -o jsonpath='{.data.password}' | base64 -d)
+{{- else }}
+              PASSWORD=$(oc get secret central-htpasswd -n stackrox -o jsonpath='{.data.password}' | base64 -d)
+{{- end }}
+
+              # Check if init bundle already exists
+              EXISTING=$(curl -sk -u "admin:${PASSWORD}" \
+                https://central.stackrox.svc:443/v1/cluster-init/init-bundles | \
+                python3 -c "import sys,json; bundles=json.load(sys.stdin).get('items',[]); print('exists' if any(b['name']=='local-cluster' for b in bundles) else 'none')" 2>/dev/null)
+
+              if [ "$EXISTING" = "exists" ]; then
+                echo "Init bundle 'local-cluster' already exists, skipping"
+                exit 0
+              fi
+
+              # Generate init bundle
+              BUNDLE=$(curl -sk -u "admin:${PASSWORD}" \
+                -X POST https://central.stackrox.svc:443/v1/cluster-init/init-bundles \
+                -H "Content-Type: application/json" \
+                -d '{"name":"local-cluster"}')
+
+              # Extract and apply the kubectl bundle
+              echo "$BUNDLE" | python3 -c "import sys,json,base64; print(base64.b64decode(json.load(sys.stdin)['kubectlBundle']).decode())" | oc apply -n stackrox -f -
+
+              echo "Init bundle applied successfully"

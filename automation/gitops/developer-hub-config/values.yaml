@@ -1,0 +1,24 @@
+backstage:
+  host: ""
+
+gitlab:
+  host: ""
+
+argocd:
+  host: ""
+
+kubernetes:
+  apiUrl: ""
+
+sonarqube:
+  host: ""  
+
+keycloak:
+  host: ""
+  realm: backstage
+  loginRealm: backstage
+
+cluster:
+  subdomain: ""
+
+devMode: false

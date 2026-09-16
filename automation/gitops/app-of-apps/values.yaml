@@ -1,0 +1,284 @@
+gitops:
+  repoURL: https://github.com/rhpds/openshift-advanced-platform-demo
+  targetRevision: main
+
+argocd:
+  namespace: openshift-gitops
+
+# Operator version pinning via custom CatalogSource.
+# When enabled, a snapshot of the Red Hat operator catalog is deployed
+# and all operator subscriptions use it instead of the live catalog.
+catalogSource:
+  enabled: false
+  name: redhat-operators-snapshot
+  namespace: openshift-marketplace
+  image: quay.io/rhpds/olm_snapshot_redhat_catalog
+  tag: v4.21_2026_05_25
+  displayName: "Red Hat Operators (Snapshot)"
+  publisher: "Red Hat Demo Platform"
+  grpcPodConfig:
+    extractContent:
+      catalogDir: /configs
+      cacheDir: /tmp/cache
+
+cluster:
+  subdomain: ""
+  apiServer: ""
+
+common:
+  password: ""
+
+vault:
+  name: vault
+  namespace: vault
+  authNamespace: default
+  secrets:
+    gitlab:
+      rootPassword: ""
+    keycloak:
+      clientId: backstage
+      pluginClientId: backstage-plugin
+      clientSecret: ""
+      pluginClientSecret: ""
+      openshiftClientSecret: ""
+    rhdh:
+      argocdPassword: ""
+      postgresqlPassword: password
+    orchestrator:
+      token: ""
+    common:
+      password: ""
+    litellm:
+      apiUrl: ""
+      apiKey: ""
+    sonarqube:
+      adminPassword: ""
+    kafka:
+      userPassword: ""
+    tpa:
+      cliClientSecret: ""
+
+externalSecrets:
+  name: external-secrets
+  namespace: external-secrets
+
+openshiftPipelines:
+  name: openshift-pipelines
+  namespace: openshift-operators
+
+openshiftServerless:
+  name: openshift-serverless
+  namespace: openshift-serverless
+
+serviceMesh:
+  name: service-mesh
+  namespace: openshift-operators
+
+noobaa:
+  enabled: true
+  name: noobaa
+  namespace: openshift-storage
+
+gitlab:
+  name: gitlab
+  namespace: gitlab
+  host: ""
+  smtp:
+    host: ""
+  ssh:
+    host: ""
+  rootPassword: ""
+  usersPassword: ""
+  cluster:
+    subdomain: ""
+  gitops:
+    namespace: ""
+  quay:
+    host: ""
+
+keycloak:
+  disabled: false
+  name: keycloak
+  namespace: keycloak
+  crName: keycloak
+  externalAccess: false
+  route:
+    host: ""
+  realm:
+    name: backstage
+  client:
+    backstage:
+      name: backstage
+      redirectUri: ""
+      webOrigin: ""
+      secret: ""
+    backstagePlugin:
+      name: backstage-plugin
+      secret: ""
+    openshift:
+      name: openshift
+      redirectUri: ""
+      secret: ""
+    tpaCli:
+      name: tpa-cli
+      secret: ""
+  users:
+    password: ""
+
+quay:
+  name: quay
+  namespace: quay-registry
+  host: ""
+  adminUser: quayadmin
+  adminUserPassword: ""
+  organizations:
+    - parasol
+  users: []
+
+developerHub:
+  name: developer-hub
+  namespace: rhdh
+  config:
+    backstage:
+      host: ""
+    gitlab:
+      host: ""
+    argocd:
+      host: ""
+    kubernetes:
+      apiUrl: ""
+    keycloak:
+      host: ""
+      realm: backstage
+      loginRealm: backstage
+  application:
+    git:
+      host: "github.com"
+      group: rhpds
+      repo: openshift-advanced-platform-demo
+      revision: main
+
+rhdhGitops:
+  name: rhdh-gitops
+  namespace: rhdh-gitops
+  password: ""
+
+rhdh:
+  name: backstage-bootstrap
+  namespace: backstage
+  configTemplate:
+    gitlab:
+      rootPassword: ""
+      host: ""
+    backstage:
+      host: ""
+    keycloak:
+      host: ""
+      realm: backstage
+      loginRealm: backstage
+      clientId: backstage-plugin
+      clientSecret: ""
+    gitops:
+      host: ""
+    kubernetes:
+      api: ""
+    cluster:
+      subdomain: ""
+  application:
+    gitops:
+      namespace: openshift-gitops
+    helm:
+      version: 1.8.2
+      values:
+        git:
+          host: ""
+
+tpa:
+  enabled: true
+  name: trusted-profile-analyzer
+  namespace: trusted-profile-analyzer
+  appDomain: ""
+  oidcIssuer: ""
+  postgresql:
+    user: trustify
+    database: trustify
+    password: trustify
+  s3:
+    region: ""
+
+rhtas:
+  name: trusted-artifact-signer
+  namespace: trusted-artifact-signer
+  instance: securesign
+  oidcIssuer: ""
+  rootCert:
+    email: admin@rhdemo.com
+    org: Parasol
+
+openshiftOAuth:
+  disabled: false
+  name: openshift-oauth
+  namespace: openshift-config
+
+kubernetesImagepuller:
+  name: kubernetes-imagepuller
+  namespace: openshift-operators
+
+devspaces:
+  enabled: true
+  name: devspaces
+  namespace: openshift-devspaces
+
+infraAppOfApps:
+  name: infra-app-of-apps
+
+amqStreams:
+  enabled: true
+  name: amq-streams
+  namespace: kafka
+
+acs:
+  enabled: true
+  name: acs
+  namespace: stackrox
+  clusterName: local-cluster
+  adminPassword: ""
+
+parasolRbac:
+  name: parasol-rbac
+  namespace: parasol-insurance-dev
+
+parasolInsurance:
+  name: parasol-insurance
+  namespace: parasol-insurance-dev
+
+openvsx:
+  name: openvsx
+  namespace: che-openvsx
+
+sonarqube:
+  name: sonarqube
+  namespace: sonarqube
+
+jiraStub:
+  name: jira-stub
+  namespace: rhdh
+
+orchestrator:
+  name: orchestrator
+  namespace: backstage
+  backstage:
+    backend:
+      url: ""
+  openshift:
+    url: ""
+  gitlab:
+    url: ""
+
+orchestratorWorkflows:
+  name: orchestrator-workflows
+  namespace: rhdh
+
+ztunnelHealer:
+  name: ztunnel-healer
+  namespace: istio-mesh-tools

@@ -1,0 +1,27 @@
+{{- if .Values.acs.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+{{ include "app-of-apps.metadata" (dict "name" .Values.acs.name "namespace" .Values.argocd.namespace "syncWave" "0") }}
+spec:
+  destination:
+    namespace: {{ .Values.acs.namespace }}
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    path: automation/gitops/acs
+    repoURL: {{ .Values.gitops.repoURL }}
+    targetRevision: {{ .Values.gitops.targetRevision }}
+    helm:
+      valuesObject:
+        acs-operator:
+          subscription:
+            source: {{ include "app-of-apps.operatorSource" . }}
+        acs-instance:
+          clusterName: {{ .Values.acs.clusterName }}
+          adminPassword: {{ .Values.acs.adminPassword }}
+          quay:
+            namespace: {{ .Values.quay.namespace }}
+          vault:
+            namespace: {{ .Values.vault.namespace }}
+{{ include "app-of-apps.syncPolicy" . | indent 2 }}
+{{- end }}

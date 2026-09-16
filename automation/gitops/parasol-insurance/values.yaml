@@ -1,0 +1,60 @@
+gitlab:
+  rootPassword: ""
+  host: ""
+  email:
+    address: "gitlab@rhdemo.com"
+    displayName: "GitLab"
+
+registry:
+  host: ""
+  organization: parasol
+  username: ""
+  password: ""
+
+cluster:
+  subdomain: ""
+
+argocd:
+  namespace: rhdh-gitops
+
+environments:
+  - name: dev
+    namespace: parasol-insurance-dev
+    branch: main
+  - name: prod
+    namespace: parasol-insurance-prod
+    branch: main
+
+build:
+  namespace: parasol-insurance-build
+
+securedEnvironments:
+  - name: dev
+    namespace: parasol-insurance-secured-dev
+    branch: main
+  - name: prod
+    namespace: parasol-insurance-secured-prod
+    branch: main
+
+securedBuild:
+  namespace: parasol-insurance-secured-build
+
+vault:
+  name: vault
+  namespace: vault
+
+database:
+  image: registry.redhat.io/rhel8/postgresql-12:1
+  user: parasol
+  password: parasol
+  name: parasol
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  persistence:
+    enabled: true
+    capacity: 5Gi

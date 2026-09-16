@@ -1,0 +1,29 @@
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: open-vsx-server
+  labels:
+    {{- include "openvsx.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+spec:
+  source:
+    type: Git
+    git:
+      uri: {{ .Values.build.git.uri }}
+      ref: {{ .Values.build.git.ref }}
+    contextDir: {{ .Values.build.git.contextDir }}
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Containerfile
+      buildArgs:
+        - name: OPEN_VSX_VERSION
+          value: {{ .Values.server.version | quote }}
+  output:
+    to:
+      kind: ImageStreamTag
+      name: open-vsx-server:latest
+  triggers:
+    - type: ConfigChange

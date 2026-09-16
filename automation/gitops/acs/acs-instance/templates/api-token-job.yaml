@@ -1,0 +1,76 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: acs-api-token-generator
+  namespace: stackrox
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      serviceAccountName: acs-api-token-generator
+      restartPolicy: OnFailure
+      containers:
+        - name: api-token-generator
+          image: registry.redhat.io/openshift4/ose-cli:latest
+          env:
+            - name: VAULT_NAMESPACE
+              value: {{ .Values.vault.namespace | quote }}
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              # Wait for Central to be ready
+              echo "Waiting for Central..."
+              until curl -sk https://central.stackrox.svc:443/v1/ping; do
+                echo "Central not ready, retrying in 10s..."
+                sleep 10
+              done
+              echo "Central is ready"
+
+              # Get admin password
+{{- if .Values.adminPassword }}
+              PASSWORD=$(oc get secret central-admin-password -n stackrox -o jsonpath='{.data.password}' | base64 -d)
+{{- else }}
+              PASSWORD=$(oc get secret central-htpasswd -n stackrox -o jsonpath='{.data.password}' | base64 -d)
+{{- end }}
+
+              # Wait for Vault KV engine to be ready (vault-setup job must have
+              # finished enabling KV v2 and logging in with the root token)
+              echo "Waiting for Vault..."
+              until oc exec vault-0 -n "$VAULT_NAMESPACE" -- vault kv list kv/secrets 2>/dev/null; do
+                echo "Vault KV engine not ready, retrying in 10s..."
+                sleep 10
+              done
+              echo "Vault is ready"
+
+              # Check if token already exists in Vault
+              echo "Checking if API token already exists in Vault..."
+              EXISTING_TOKEN=$(oc exec vault-0 -n "$VAULT_NAMESPACE" -- vault kv get -field=value kv/secrets/acs/api-token 2>/dev/null)
+              if [ -n "$EXISTING_TOKEN" ]; then
+                echo "API token already exists in Vault, skipping"
+                exit 0
+              fi
+
+              # Generate API token
+              echo "Generating ACS API token..."
+              RESPONSE=$(curl -sk -u "admin:${PASSWORD}" \
+                -X POST https://central.stackrox.svc:443/v1/apitokens/generate \
+                -H "Content-Type: application/json" \
+                -d '{"name":"automation-token","roles":["Continuous Integration"]}')
+
+              TOKEN=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])" 2>/dev/null)
+
+              if [ -z "$TOKEN" ]; then
+                echo "ERROR: Failed to generate API token"
+                echo "Response: $RESPONSE"
+                exit 1
+              fi
+
+              # Store token in Vault
+              echo "Storing API token in Vault..."
+              oc exec vault-0 -n "$VAULT_NAMESPACE" -- vault kv put kv/secrets/acs/api-token value="$TOKEN"
+
+              echo "ACS API token generated and stored in Vault successfully"

@@ -1,0 +1,15 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: acs-api-token-generator
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+subjects:
+  - kind: ServiceAccount
+    name: acs-api-token-generator
+    namespace: stackrox
+roleRef:
+  kind: ClusterRole
+  name: acs-api-token-generator
+  apiGroup: rbac.authorization.k8s.io

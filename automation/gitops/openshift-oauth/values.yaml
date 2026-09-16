@@ -1,0 +1,13 @@
+keycloak:
+  host: ""
+  realm: backstage
+
+cluster:
+  subdomain: ""
+
+oidc:
+  clientId: openshift
+
+argocd:
+  enabled: true
+  syncwave: "3"

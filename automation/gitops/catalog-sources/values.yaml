@@ -1,0 +1,11 @@
+catalogSources:
+  - name: redhat-operators-snapshot
+    image: quay.io/rhpds/olm_snapshot_redhat_catalog
+    tag: v4.21_2026_05_25
+    namespace: openshift-marketplace
+    displayName: "Red Hat Operators (Snapshot)"
+    publisher: "Red Hat Demo Platform"
+    grpcPodConfig:
+      extractContent:
+        catalogDir: /configs
+        cacheDir: /tmp/cache

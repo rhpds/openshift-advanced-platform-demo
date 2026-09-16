@@ -1,0 +1,17 @@
+---
+apiVersion: sailoperator.io/v1
+kind: IstioCNI
+metadata:
+  name: default
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  namespace: {{ .Values.istioCni.namespace }}
+  profile: ambient
+  values:
+    cni:
+      # Persists CNI config across node reboots so pods that start before
+      # ZTunnel's initial reconciliation still get iptables rules set up
+      # and are properly handed off for HBONE enrollment.
+      istioOwnedCNIConfig: true

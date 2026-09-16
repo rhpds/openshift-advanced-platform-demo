@@ -1,0 +1,14 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: acs-api-token-generator
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/exec"]
+    verbs: ["get", "create"]

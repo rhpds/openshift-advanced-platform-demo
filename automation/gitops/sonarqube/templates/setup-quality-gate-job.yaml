@@ -1,0 +1,89 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sonarqube-setup-quality-gate
+  labels:
+    {{- include "sonarqube.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 10
+  template:
+    metadata:
+      labels:
+        {{- include "sonarqube.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: setup-quality-gate
+          image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              SONAR_URL="http://sonarqube:{{ .Values.sonarqube.port }}"
+              SONAR_AUTH="admin:${SONARQUBE_ADMIN_PASSWORD}"
+
+              echo "Waiting for SonarQube to be ready..."
+              until curl -sf "${SONAR_URL}/api/system/status" | grep -q '"status":"UP"'; do
+                sleep 5
+              done
+
+              echo "Verifying credentials..."
+              until curl -sf -u "${SONAR_AUTH}" "${SONAR_URL}/api/system/status" > /dev/null; do
+                echo "Waiting for admin password to be set..."
+                sleep 5
+              done
+
+              echo "Creating 'Parasol' quality gate..."
+              curl -sf -u "${SONAR_AUTH}" \
+                -X POST "${SONAR_URL}/api/qualitygates/create" \
+                -d "name=Parasol" || echo "(may already exist)"
+
+              # The gate is created with default CAYC conditions including coverage.
+              # Remove the coverage condition only.
+              echo "Removing coverage condition..."
+              CONDITIONS=$(curl -sf -u "${SONAR_AUTH}" \
+                "${SONAR_URL}/api/qualitygates/show?name=Parasol")
+
+              for METRIC in new_coverage; do
+                COND_ID=$(echo "${CONDITIONS}" | grep -o "\"id\":\"[^\"]*\",\"metric\":\"${METRIC}\"" | grep -o '"id":"[^"]*"' | grep -o '[a-f0-9-]\{36\}')
+                if [ -n "${COND_ID}" ]; then
+                  echo "  Removing ${METRIC} (${COND_ID})..."
+                  curl -sf -u "${SONAR_AUTH}" \
+                    -X POST "${SONAR_URL}/api/qualitygates/delete_condition" \
+                    -d "id=${COND_ID}" || true
+                fi
+              done
+
+              # Add custom conditions if not already present
+              # Use overall metrics (not new code) so they work on first scan
+              echo "Ensuring conditions are set..."
+              for CONDITION in \
+                "metric=new_reliability_rating&op=GT&error=1" \
+                "metric=new_security_rating&op=GT&error=1" \
+                "metric=new_maintainability_rating&op=GT&error=1" \
+                "metric=violations&op=GT&error=0" \
+                "metric=reliability_rating&op=GT&error=1" \
+                "metric=security_rating&op=GT&error=1"; do
+                curl -sf -u "${SONAR_AUTH}" \
+                  -X POST "${SONAR_URL}/api/qualitygates/create_condition" \
+                  -d "gateName=Parasol&${CONDITION}" 2>/dev/null || true
+              done
+
+              # Set as default
+              echo "Setting 'Parasol' as default quality gate..."
+              curl -sf -u "${SONAR_AUTH}" \
+                -X POST "${SONAR_URL}/api/qualitygates/set_as_default" \
+                -d "name=Parasol"
+
+              echo "Quality gate 'Parasol' configured and set as default (no coverage requirement)"
+          env:
+            - name: SONARQUBE_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sonarqube-admin
+                  key: password

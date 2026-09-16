@@ -1,0 +1,4 @@
+vault:
+  namespace: vault
+
+chainsNamespace: openshift-pipelines

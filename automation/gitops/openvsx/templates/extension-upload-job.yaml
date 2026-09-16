@@ -1,0 +1,155 @@
+{{- if .Values.extensionUpload.enabled }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: openvsx-extension-upload
+  labels:
+    {{- include "openvsx.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        {{- include "openvsx.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: upload
+          image: image-registry.openshift-image-registry.svc:5000/{{ .Release.Namespace }}/openvsx-extension-uploader:latest
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+
+              OPENVSX_URL="http://open-vsx-server.{{ .Release.Namespace }}.svc:{{ .Values.server.port }}"
+              PG_HOST="open-vsx-pg.{{ .Release.Namespace }}.svc"
+              PG_PORT={{ .Values.postgresql.port }}
+              PG_DB="${POSTGRESQL_DATABASE}"
+              PG_USER="${POSTGRESQL_USER}"
+
+              # Wait for OpenVSX server readiness
+              echo "Waiting for OpenVSX server..."
+              until curl -sf "${OPENVSX_URL}/user" > /dev/null 2>&1; do
+                echo "  ...not ready, retrying in 5s"
+                sleep 5
+              done
+              echo "OpenVSX server is ready"
+
+              # Create admin user and PAT via psql
+              echo "Creating admin user and PAT..."
+              export PGPASSWORD="${POSTGRESQL_PASSWORD}"
+
+              psql -h "${PG_HOST}" -p "${PG_PORT}" -U "${PG_USER}" -d "${PG_DB}" <<'EOSQL'
+              INSERT INTO user_data (id, login_name, role)
+                VALUES (1001, 'admin', 'admin')
+                ON CONFLICT (id) DO NOTHING;
+
+              INSERT INTO personal_access_token (id, user_data, value, active, created_timestamp, accessed_timestamp, description)
+                VALUES (1001, 1001, 'admin_upload_token', true, NOW(), NOW(), 'Extension upload token')
+                ON CONFLICT (id) DO UPDATE SET active = true;
+              EOSQL
+
+              export OVSX_REGISTRY_URL="${OPENVSX_URL}"
+              export OVSX_PAT="admin_upload_token"
+
+              # Read extension list and download/upload each
+              EXTENSION_FILE="/config/extension-list.yaml"
+              num_ext=$(yq e '.extensions | length' "${EXTENSION_FILE}")
+              echo "Processing ${num_ext} extensions..."
+
+              WORK_DIR=$(mktemp -d)
+              index=0
+              while [[ ${index} -lt ${num_ext} ]]; do
+                ext_id=$(yq e ".extensions.[${index}].id" "${EXTENSION_FILE}")
+                has_version=$(yq ".extensions.[${index}] | has(\"version\")" "${EXTENSION_FILE}")
+
+                if [[ ${has_version} == "true" ]]; then
+                  ext_version=$(yq e ".extensions.[${index}].version" "${EXTENSION_FILE}")
+                else
+                  ext_version="latest"
+                fi
+
+                ext_path=${ext_id//./\/}
+                echo "Fetching ${ext_id} (${ext_version})..."
+                ext_metadata=$(curl -sLS "https://open-vsx.org/api/${ext_path}/${ext_version}")
+
+                # Determine download URL
+                has_linux_x64=$(echo "${ext_metadata}" | yq ".downloads | has(\"linux-x64\")")
+                has_universal=$(echo "${ext_metadata}" | yq ".downloads | has(\"universal\")")
+                if [[ ${has_linux_x64} == "true" ]]; then
+                  url=$(echo "${ext_metadata}" | yq e ".downloads.linux-x64")
+                elif [[ ${has_universal} == "true" ]]; then
+                  url=$(echo "${ext_metadata}" | yq e ".downloads.universal")
+                else
+                  url=$(echo "${ext_metadata}" | yq e ".files.download")
+                fi
+
+                name=$(echo "${ext_metadata}" | yq e ".name")
+                namespace=$(echo "${ext_metadata}" | yq e ".namespace")
+                version=$(echo "${ext_metadata}" | yq e ".version")
+                filename="${namespace}-${name}-${version}.vsix"
+
+                echo "  Downloading ${filename}..."
+                curl -sL "${url}" -o "${WORK_DIR}/${filename}"
+
+                # Create namespace and publish
+                ovsx create-namespace "${namespace}" 2>/dev/null || true
+                echo "  Publishing ${filename}..."
+                ovsx publish --skip-duplicate "${WORK_DIR}/${filename}"
+
+                index=$(( index + 1 ))
+              done
+
+              rm -rf "${WORK_DIR}"
+
+              # Disable the PAT after upload
+              echo "Disabling upload PAT..."
+              psql -h "${PG_HOST}" -p "${PG_PORT}" -U "${PG_USER}" -d "${PG_DB}" \
+                -c "UPDATE personal_access_token SET active = false WHERE id = 1001;"
+
+              echo "Extension upload complete"
+          env:
+            - name: POSTGRESQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: open-vsx-pg
+                  key: database-user
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: open-vsx-pg
+                  key: database-password
+            - name: POSTGRESQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: open-vsx-pg
+                  key: database-name
+          volumeMounts:
+            - name: extension-list
+              mountPath: /config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: extension-list
+          configMap:
+            name: openvsx-extension-list
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+{{- end }}

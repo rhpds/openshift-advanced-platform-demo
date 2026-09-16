@@ -1,0 +1,11 @@
+---
+apiVersion: sailoperator.io/v1alpha1
+kind: ZTunnel
+metadata:
+  name: default
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  namespace: {{ .Values.ztunnel.namespace }}
+  profile: ambient

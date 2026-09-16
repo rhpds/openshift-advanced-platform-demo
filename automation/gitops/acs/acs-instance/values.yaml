@@ -1,0 +1,15 @@
+nameOverride: ""
+
+clusterName: local-cluster
+
+adminPassword: ""
+
+argocd:
+  enabled: true
+  syncwave: "2"
+
+quay:
+  namespace: quay-registry
+
+vault:
+  namespace: vault

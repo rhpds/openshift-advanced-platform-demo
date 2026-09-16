@@ -1,0 +1,56 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+{{ include "app-of-apps.metadata" (dict "name" (printf "%s-prereqs" .Values.developerHub.name) "namespace" .Values.argocd.namespace "syncWave" "2") }}
+spec:
+  destination:
+    namespace: {{ .Values.developerHub.namespace }}
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    path: developer-hub/developer-hub-prereqs
+    repoURL: {{ .Values.gitops.repoURL }}
+    targetRevision: {{ .Values.gitops.targetRevision }}
+    helm:
+      valuesObject:
+        operator:
+          # Uses the live catalog instead of the pinned snapshot because
+          # fast-1.9 is not available in the snapshot image.
+          source: redhat-operators
+          sourceNamespace: openshift-marketplace
+        vault:
+          namespace: {{ .Values.vault.namespace }}
+          name: {{ .Values.vault.name }}
+{{ include "app-of-apps.syncPolicy" . | indent 2 }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+{{ include "app-of-apps.metadata" (dict "name" (printf "%s-application" .Values.developerHub.name) "namespace" .Values.argocd.namespace "syncWave" "3") }}
+spec:
+  destination:
+    namespace: {{ .Values.developerHub.namespace }}
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    repoURL: https://{{ .Values.developerHub.application.git.host }}/{{ .Values.developerHub.application.git.group }}/{{ .Values.developerHub.application.git.repo }}.git
+    targetRevision: {{ .Values.developerHub.application.git.revision }}
+    path: .
+    helm:
+      valuesObject:
+        backstage:
+          host: {{ .Values.developerHub.config.backstage.host }}
+        gitlab:
+          host: {{ .Values.developerHub.config.gitlab.host }}
+        argocd:
+          host: {{ .Values.developerHub.config.argocd.host }}
+        kubernetes:
+          apiUrl: {{ .Values.developerHub.config.kubernetes.apiUrl }}
+        keycloak:
+          host: {{ .Values.developerHub.config.keycloak.host }}
+          realm: {{ .Values.developerHub.config.keycloak.realm }}
+          loginRealm: {{ .Values.developerHub.config.keycloak.loginRealm }}
+        sonarqube:
+          host: sonarqube-sonarqube.{{ .Values.cluster.subdomain }}
+        cluster:
+          subdomain: {{ .Values.cluster.subdomain }}
+        devMode: {{ eq .Values.gitops.targetRevision "dev" }}
+{{ include "app-of-apps.syncPolicy" . | indent 2 }}

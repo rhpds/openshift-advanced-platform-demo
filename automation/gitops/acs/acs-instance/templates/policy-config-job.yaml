@@ -1,0 +1,81 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: acs-policy-config
+  namespace: stackrox
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      serviceAccountName: init-bundle-generator
+      restartPolicy: OnFailure
+      containers:
+        - name: policy-config
+          image: registry.redhat.io/openshift4/ose-cli:latest
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              # Wait for Central to be ready
+              echo "Waiting for Central..."
+              until curl -sk https://central.stackrox.svc:443/v1/ping; do
+                echo "Central not ready, retrying in 10s..."
+                sleep 10
+              done
+              echo "Central is ready"
+
+              # Get admin password
+{{- if .Values.adminPassword }}
+              PASSWORD=$(oc get secret central-admin-password -n stackrox -o jsonpath='{.data.password}' | base64 -d)
+{{- else }}
+              PASSWORD=$(oc get secret central-htpasswd -n stackrox -o jsonpath='{.data.password}' | base64 -d)
+{{- end }}
+
+              ACS_URL="https://central.stackrox.svc:443"
+
+              # Find the policy by name
+              POLICY_NAME="Fixable Severity at least Important"
+              echo "Looking up policy: $POLICY_NAME"
+              POLICY_ID=$(curl -sk -u "admin:${PASSWORD}" \
+                "${ACS_URL}/v1/policies?query=Policy:${POLICY_NAME// /+}" \
+                | python3 -c "import sys,json; policies=json.load(sys.stdin).get('policies',[]); print(next((p['id'] for p in policies if p['name']=='${POLICY_NAME}'), ''))" 2>/dev/null)
+
+              if [ -z "$POLICY_ID" ]; then
+                echo "ERROR: Policy '$POLICY_NAME' not found"
+                exit 1
+              fi
+              echo "Found policy ID: $POLICY_ID"
+
+              # Get the full policy
+              POLICY=$(curl -sk -u "admin:${PASSWORD}" "${ACS_URL}/v1/policies/${POLICY_ID}")
+
+              # Check if enforcement is already cleared
+              CURRENT_ENFORCEMENT=$(echo "$POLICY" | python3 -c "import sys,json; print(json.dumps(json.load(sys.stdin).get('enforcementActions',[])))" 2>/dev/null)
+              if [ "$CURRENT_ENFORCEMENT" = "[]" ]; then
+                echo "Policy '$POLICY_NAME' is already set to Inform, skipping"
+                exit 0
+              fi
+              echo "Current enforcement: $CURRENT_ENFORCEMENT"
+
+              # Remove enforcement actions (set to Inform)
+              UPDATED_POLICY=$(echo "$POLICY" | python3 -c "
+              import sys, json
+              p = json.load(sys.stdin)
+              p['enforcementActions'] = []
+              print(json.dumps(p))
+              ")
+
+              RESULT=$(curl -sk -o /dev/null -w "%{http_code}" -u "admin:${PASSWORD}" \
+                -X PUT "${ACS_URL}/v1/policies/${POLICY_ID}" \
+                -H "Content-Type: application/json" \
+                -d "$UPDATED_POLICY")
+
+              if [ "$RESULT" != "200" ]; then
+                echo "ERROR: Failed to update policy (HTTP $RESULT)"
+                exit 1
+              fi
+
+              echo "Policy '$POLICY_NAME' set to Inform successfully"

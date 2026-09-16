@@ -1,0 +1,19 @@
+---
+apiVersion: platform.stackrox.io/v1alpha1
+kind: SecuredCluster
+metadata:
+  name: stackrox-secured-cluster-services
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  clusterName: {{ .Values.clusterName }}
+  admissionControl:
+    listenOnCreates: true
+    listenOnEvents: true
+    listenOnUpdates: true
+  perNode:
+    collector:
+      collection: EBPF
+      imageFlavor: Regular
+    taintToleration: TolerateTaints

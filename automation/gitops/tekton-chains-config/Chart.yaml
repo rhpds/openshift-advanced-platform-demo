@@ -1,0 +1,5 @@
+apiVersion: v2
+name: tekton-chains-config
+description: Configures Tekton Chains signing secrets from Vault
+type: application
+version: 0.1.0

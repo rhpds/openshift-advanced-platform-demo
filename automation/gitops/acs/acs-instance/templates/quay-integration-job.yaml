@@ -1,0 +1,64 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: quay-integration
+  namespace: stackrox
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      serviceAccountName: quay-integration
+      restartPolicy: OnFailure
+      containers:
+        - name: quay-integration
+          image: registry.redhat.io/openshift4/ose-cli:latest
+          env:
+            - name: QUAY_NAMESPACE
+              value: {{ .Values.quay.namespace | quote }}
+            - name: VAULT_NAMESPACE
+              value: {{ .Values.vault.namespace | quote }}
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              SECRET_NAME="quay-registry-pull-secret"
+
+              # Check if pull secret already exists
+              if oc get secret "$SECRET_NAME" -n stackrox &>/dev/null; then
+                echo "Pull secret '$SECRET_NAME' already exists in stackrox, skipping"
+                exit 0
+              fi
+
+              # Wait for QuayRegistry CR to have a registryEndpoint in status
+              echo "Waiting for QuayRegistry to be ready..."
+              until QUAY_ENDPOINT=$(oc get quayregistry -n "$QUAY_NAMESPACE" -o jsonpath='{.items[0].status.registryEndpoint}' 2>/dev/null) && [ -n "$QUAY_ENDPOINT" ]; do
+                echo "QuayRegistry not ready, retrying in 10s..."
+                sleep 10
+              done
+              echo "QuayRegistry endpoint: $QUAY_ENDPOINT"
+
+              # Strip protocol prefix for Docker config
+              QUAY_HOST="${QUAY_ENDPOINT#https://}"
+              QUAY_HOST="${QUAY_HOST#http://}"
+
+              # Read Quay admin password from Vault
+              echo "Reading Quay admin password from Vault..."
+              QUAY_PASSWORD=$(oc exec vault-0 -n "$VAULT_NAMESPACE" -- vault kv get -field=value kv/secrets/quay/password)
+              if [ -z "$QUAY_PASSWORD" ]; then
+                echo "ERROR: Failed to read Quay password from Vault"
+                exit 1
+              fi
+
+              QUAY_USER="quayadmin"
+
+              # Create the pull secret
+              oc create secret docker-registry "$SECRET_NAME" \
+                -n stackrox \
+                --docker-server="$QUAY_HOST" \
+                --docker-username="$QUAY_USER" \
+                --docker-password="$QUAY_PASSWORD"
+
+              echo "Pull secret '$SECRET_NAME' created successfully in stackrox"

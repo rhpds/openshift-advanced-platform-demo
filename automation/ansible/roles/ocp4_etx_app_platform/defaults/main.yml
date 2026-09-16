@@ -8,7 +8,6 @@ ocp4_etx_app_platform_wait_for_apps_ignore_errors: false
 
 ocp4_etx_app_platform_gitops_repo: https://github.com/rhpds/openshift-advanced-platform-demo
 ocp4_etx_app_platform_gitops_repo_tag: main
-ocp4_etx_app_platform_gitops_repo_path: automation/gitops/app-of-apps
 
 # ------------------------------------------------
 # OpenShift Gitops
@@ -319,7 +318,6 @@ ocp4_etx_app_platform_developer_hub_config_git_host: github.com
 ocp4_etx_app_platform_developer_hub_config_git_group: rhpds
 ocp4_etx_app_platform_developer_hub_config_git_repo: openshift-advanced-platform-demo
 ocp4_etx_app_platform_developer_hub_config_git_revision: main
-ocp4_etx_app_platform_developer_hub_config_git_path: automation/gitops/developer-hub-config
 
 # ------------------------------------------------
 # Orchestrator

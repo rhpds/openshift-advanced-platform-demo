@@ -157,7 +157,6 @@ developerHub:
       group: rhpds
       repo: openshift-advanced-platform-demo
       revision: main
-      path: automation/gitops/developer-hub-config
 
 rhdhGitops:
   name: rhdh-gitops

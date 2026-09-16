@@ -6,8 +6,9 @@
 # set to true to continue deployment even if child apps fail to sync/healthy
 ocp4_etx_app_platform_wait_for_apps_ignore_errors: false
 
-ocp4_etx_app_platform_gitops_repo: https://github.com/redhat-ads-tech/ocp-app-platform-demo-helm.git
+ocp4_etx_app_platform_gitops_repo: https://github.com/rhpds/openshift-advanced-platform-demo
 ocp4_etx_app_platform_gitops_repo_tag: main
+ocp4_etx_app_platform_gitops_repo_path: automation/gitops/app-of-apps
 
 # ------------------------------------------------
 # OpenShift Gitops
@@ -315,9 +316,10 @@ ocp4_etx_app_platform_rhdh_psql_password: password
 
 ocp4_etx_app_platform_developer_hub_namespace: rhdh
 ocp4_etx_app_platform_developer_hub_config_git_host: github.com
-ocp4_etx_app_platform_developer_hub_config_git_group: redhat-ads-tech
-ocp4_etx_app_platform_developer_hub_config_git_repo: ocp-app-platform-demo-developer-hub-config
+ocp4_etx_app_platform_developer_hub_config_git_group: rhpds
+ocp4_etx_app_platform_developer_hub_config_git_repo: openshift-advanced-platform-demo
 ocp4_etx_app_platform_developer_hub_config_git_revision: main
+ocp4_etx_app_platform_developer_hub_config_git_path: automation/gitops/developer-hub-config
 
 # ------------------------------------------------
 # Orchestrator

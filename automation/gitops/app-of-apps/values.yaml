@@ -154,9 +154,10 @@ developerHub:
   application:
     git:
       host: "github.com"
-      group: redhat-ads-tech
-      repo: ocp-app-platform-demo-developer-hub-config
+      group: rhpds
+      repo: openshift-advanced-platform-demo
       revision: main
+      path: automation/gitops/developer-hub-config
 
 rhdhGitops:
   name: rhdh-gitops

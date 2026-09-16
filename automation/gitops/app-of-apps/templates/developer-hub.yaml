@@ -31,9 +31,9 @@ spec:
     server: https://kubernetes.default.svc
   project: default
   source:
-    repoURL: https://{{ .Values.developerHub.application.git.host }}/{{ .Values.developerHub.application.git.group }}/{{ .Values.developerHub.application.git.repo }}.git
+    repoURL: https://{{ .Values.developerHub.application.git.host }}/{{ .Values.developerHub.application.git.group }}/{{ .Values.developerHub.application.git.repo }}
     targetRevision: {{ .Values.developerHub.application.git.revision }}
-    path: .
+    path: {{ .Values.developerHub.application.git.path | default "." }}
     helm:
       valuesObject:
         backstage:

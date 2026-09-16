@@ -27,7 +27,7 @@ spec:
   source:
     repoURL: {{ ocp4_etx_app_platform_gitops_repo }}
     targetRevision: {{ ocp4_etx_app_platform_gitops_repo_tag }}
-    path: app-of-apps
+    path: {{ ocp4_etx_app_platform_gitops_repo_path }}
     helm:
       # Values passed here configure all demo platform services deployed
       # by the app-of-apps Helm chart (GitOps, Keycloak, Quay, RHDH, etc.)

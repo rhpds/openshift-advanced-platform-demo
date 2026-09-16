@@ -1,0 +1,22 @@
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: kubernetes-sa-token
+  namespace: rhdh
+  labels:
+    app.kubernetes.io/name: backstage
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  refreshInterval: 5m
+  secretStoreRef:
+    name: vault-secret-store
+    kind: ClusterSecretStore
+  target:
+    name: kubernetes-sa-token
+    creationPolicy: Owner
+  data:
+    - secretKey: KUBERNETES_SA_TOKEN
+      remoteRef:
+        key: secrets/rhdh/kubernetes-sa-token
+        property: value

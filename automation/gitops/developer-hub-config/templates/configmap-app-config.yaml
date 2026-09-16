@@ -1,0 +1,232 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: app-config-rhdh
+  labels:
+    app.kubernetes.io/name: backstage
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+data:
+  app-config-rhdh.yaml: |
+    app:
+      title: Red Hat Developer Hub
+      baseUrl: https://{{ .Values.backstage.host }}
+
+    lightspeed:
+      # OPTIONAL: Custom users prompts displayed to users
+      # If not provided, the plugin uses built-in default prompts
+      prompts:
+        - title: Introduce Parasol Insurance Application
+          message: |
+            Introduce me about the parasol-insurance-api API, its components registered (including API) in the 
+            Red Hat Developer Hub catalog. Complete the introduction writing a sample snippet of Java code to access it.
+
+        - title: Using Lightspeed and MCP
+          message: |
+            Tell me about the capabilities of Red Hat Developer Lightspeed and its integration with the MCP tools of
+            this instance of Red Hat Developer Hub.
+
+      mcpServers:
+      - name: mcp::backstage
+        token: ${MCP_SECRET}
+
+      # OPTIONAL: Port for lightspeed service (default: 8080)
+      # servicePort: ${LIGHTSPEED_SERVICE_PORT}
+
+      # OPTIONAL: Override default RHDH system prompt
+      systemPrompt: |
+        ## Your role and audience
+
+        You assist developers and platform users who are **signed into this Red Hat Developer Hub (RHDH) instance**
+        and asking questions **from within the portal** (for example from Lightspeed or another in-app assistant).
+        Their messages refer to **this organization's catalog, templates, TechDocs, and workflows**—not a generic
+        "any Backstage deployment" unless they explicitly ask for product-wide or upstream documentation.
+
+        Interpret every user query in that context: they want practical help to **navigate and use this portal**,
+        find **entities and APIs registered here**, run **software templates exposed here**, and read **documentation
+        published to this instance**. When they name a service, API, team, or template, assume it may exist in **this**
+        catalog unless they say otherwise.
+
+        ## How to ground answers (MCP tools)
+
+        Prefer **live data from this RHDH instance** via MCP before guessing:
+
+        * **fetch-catalog-entities** — List or look up catalog entities (components, APIs, systems, resources, etc.).
+        * **knowledge_search** — Knowledge search in the catalog.
+        * **software-template-metadata-tool** — Metadata for Software Templates available in this hub.
+        * **fetch-techdocs**, **retrieve-techdocs-content**, **analyze-techdocs-coverage** — Search, analyze documentation coverage, and read TechDocs tied to entities in this instance.
+
+        Call these tools **early** when the question involves "what we have in the catalog," a named component/API,
+        template parameters, or in-portal documentation. Summarize tool results clearly and tie them back to **what
+        the user can do next in the UI** (where relevant).
+
+        ## Product knowledge and fallbacks
+
+        Explain RHDH UI concepts and patterns with accuracy; where behavior matches the upstream project, you may
+        reference **Backstage** naming and docs. If MCP returns nothing useful for an instance-specific question,
+        say that this instance may not expose that data, then offer **general** guidance from official Red Hat
+        Developer Hub or Backstage documentation—or ask a short clarifying question if the request is ambiguous.
+
+    signInPage: oidc
+    auth:
+      session:
+        secret: ${BACKEND_SECRET}
+      environment: production
+      providers:
+        oidc:
+          production:
+            prompt: login
+            metadataUrl: https://{{ .Values.keycloak.host }}/realms/{{ .Values.keycloak.realm }}/.well-known/openid-configuration
+            clientId: ${OAUTH_CLIENT_ID}
+            clientSecret: ${OAUTH_CLIENT_SECRET}
+            signIn:
+              resolvers:
+                - resolver: preferredUsernameMatchingUserEntityName
+    
+    backend:
+      baseUrl: https://{{ .Values.backstage.host }}
+      listen:
+        port: 7007
+        host: 0.0.0.0
+      actions:
+        pluginSources:
+          - software-catalog-mcp-tool
+          - techdocs-mcp-tool
+      auth:
+        externalAccess:
+          - type: static
+            options:
+              token: ${BACKEND_SECRET}
+              subject: api-clients
+          - type: static
+            options:
+              token: ${MCP_SECRET}
+              subject: mcp-clients
+          - type: static
+            options:
+              token: ${ORCHESTRATOR_TOKEN}
+              subject: orchestrator
+      # Lightspeed-specific CSP and script-src/img-src directives
+      csp:
+        upgrade-insecure-requests: false
+        img-src:
+          - "'self'"
+          - "data:"
+          - https://img.freepik.com
+          - https://cdn.dribbble.com
+          - https://avatars.githubusercontent.com
+          - https://api.dicebear.com
+        script-src:
+          - "'self'"
+          - "'unsafe-eval'"
+          - https://cdn.jsdelivr.net
+
+    techdocs:
+      builder: local
+      generator:
+        runIn: local
+
+    integrations:
+      gitlab:
+        - apiBaseUrl: https://{{ .Values.gitlab.host }}/api/v4
+          baseUrl: https://{{ .Values.gitlab.host }}
+          host: {{ .Values.gitlab.host }}
+          token: ${GITLAB_TOKEN}
+
+    catalog:
+      rules:
+        - allow: [Component, System, API, Resource, Location, Template, Domain]
+      locations:
+        - type: url
+          target: https://github.com/evanshortiss/from-ai-hype-to-platform-reality/blob/main/catalog/catalog-info.yaml
+          rules:
+            - allow: [Component, System, API, Resource, Location, Template, Domain, User, Group]
+      providers:
+        keycloakOrg:
+          default:
+            baseUrl: https://{{ .Values.keycloak.host }}
+            realm: {{ .Values.keycloak.realm }}
+            loginRealm: {{ .Values.keycloak.loginRealm }}
+            clientId: ${KEYCLOAK_PLUGIN_CLIENT_ID}
+            clientSecret: ${KEYCLOAK_PLUGIN_CLIENT_SECRET}
+            schedule:
+              frequency: { minutes: 2 }
+              timeout: { minutes: 1 }
+              initialDelay: { seconds: 15 }
+        gitlab:
+          gitlab:
+            host: {{ .Values.gitlab.host }}
+            branch: main
+            fallbackBranch: main
+            entityFilename: catalog-info.yaml
+            schedule:
+              frequency: { minutes: 5 }
+              timeout: { minutes: 3 }
+
+    argocd:
+      appLocatorMethods:
+        - type: config
+          instances:
+            - name: main
+              url: https://{{ .Values.argocd.host }}
+              username: admin
+              password: ${ARGOCD_PASSWORD}
+            # Alias for the orchestrator namespace-request template which
+            # references argoInstance 'cluster-argocd' rather than 'main'
+            - name: cluster-argocd
+              url: https://{{ .Values.argocd.host }}
+              username: admin
+              password: ${ARGOCD_PASSWORD}
+
+    jira:
+      proxyPath: /jira/api
+      product: datacenter
+
+    quay:
+      uiUrl: https://quay.{{ .Values.cluster.subdomain }}
+
+    proxy:
+      endpoints:
+        '/jira/api':
+          target: http://jira-stub.rhdh.svc.cluster.local:8080
+          headers:
+            Accept: application/json
+            Content-Type: application/json
+            X-Atlassian-Token: nocheck
+          allowedMethods: ['GET', 'POST']
+        '/quay/api':
+          target: https://quay.{{ .Values.cluster.subdomain }}
+          headers:
+            X-Requested-With: XMLHttpRequest
+          changeOrigin: true
+          secure: false
+
+    kubernetes:
+      serviceLocatorMethod:
+        type: multiTenant
+      clusterLocatorMethods:
+        - clusters:
+            - name: dev-cluster
+              url: {{ .Values.kubernetes.apiUrl }}
+              authProvider: serviceAccount
+              skipTLSVerify: true
+              serviceAccountToken: ${KUBERNETES_SA_TOKEN}
+          type: config
+      customResources:
+        - group: tekton.dev
+          apiVersion: v1
+          plural: pipelineruns
+        - group: tekton.dev
+          apiVersion: v1
+          plural: taskruns
+        - group: route.openshift.io
+          apiVersion: v1
+          plural: routes
+        - group: sonataflow.org
+          apiVersion: v1alpha08
+          plural: sonataflows
+
+    sonarqube:
+      baseUrl: https://{{ .Values.sonarqube.host }}
+      apiKey: ${SONARQUBE_API_KEY}
+      authType: Bearer

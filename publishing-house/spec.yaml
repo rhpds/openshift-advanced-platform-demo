@@ -56,7 +56,7 @@ spec:
     control_plane_instance_count: 3
     control_plane_cpu: 16
     control_plane_ram_gb: 64
-    worker_count: 6
+    worker_count: 2
     worker_cpu: 16
     worker_ram_gb: 64
     worker_disk_gb: 200

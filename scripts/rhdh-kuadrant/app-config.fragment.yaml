@@ -1,0 +1,30 @@
+
+# --- added by openshift-advanced-platform-demo (RHCL / Kuadrant) ---
+# Permission framework + RBAC, required by the Kuadrant plugin. Policies come from the
+# rbac-policy ConfigMap that the demo already ships (mounted at /opt/app-root/etc by the
+# Backstage CR extraFiles). pe1/pe2 can manage roles from the RBAC page.
+permission:
+  enabled: true
+  rbac:
+    policies-csv-file: /opt/app-root/etc/rbac-policy.csv
+    conditionalPoliciesFile: /opt/app-root/etc/rbac-conditional-policies.yaml
+    policyFileReload: true
+    admin:
+      users:
+        - name: user:default/pe1
+        - name: user:default/pe2
+    pluginsWithPermission:
+      - catalog
+      - scaffolder
+      - permission
+      - kuadrant
+      - topology
+      - tekton
+      - argocd
+      - kubernetes
+      - quay
+      - lightspeed
+      - orchestrator
+      - adoption-insights
+      - bulk-import
+      - scorecard

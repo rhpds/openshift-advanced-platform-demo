@@ -2,4 +2,330 @@
 # Human context, decisions, and notes that bridge sessions and people.
 # Not a task tracker — the manifest tracks structured progress.
 
-entries: []
+entries:
+  - id: "2026-09-13-001"
+    timestamp: "2026-09-13T13:30:00Z"
+    author: "sandrotanaka"
+    status: open
+    type: decision
+    content: >-
+      This lab is an individual initiative: there is no working relationship with the
+      owner of the ocp4-adv-app-platform-demo catalog item, so nothing may depend on
+      changes to the upstream demo repos (redhat-ads-tech/ocp-app-platform-demo-*).
+      Every fix is layered on top of a provisioned instance via scripts/post-provision.sh
+      and documented in the Showroom. Upstream pull requests remain optional and are
+      not a dependency.
+
+  - id: "2026-09-13-002"
+    timestamp: "2026-09-13T13:30:00Z"
+    author: "sandrotanaka"
+    status: open
+    type: note
+    content: >-
+      Added scripts/post-provision.sh, an idempotent fix-up script run once per instance
+      from the console Web Terminal as cluster admin. It (1) switches the sonar-scan task
+      to the fully qualified sonar-maven-plugin goal in the RHDH template skeleton, the
+      build-deployer chart and any per-user gitops repo; (2) adds argocd/app-selector and
+      the correct Quay repository slug to the parasol-insurance components; (3) labels the
+      four Parasol Argo CD Applications for that selector; (4) creates git tag 1.0 on
+      parasol/parasol-insurance-secured so the promotion pipeline publishes the image that
+      values-prod.yaml already references (secured prod otherwise stays ImagePullBackOff);
+      (5) repairs restarted instances (Parasol db+app restart on HBONE loss, RHDH restart
+      when OIDC login is stuck); (6) refreshes the RHDH catalog and prints a health summary.
+      A "Post-provisioning fix-ups" section and an RHDH-restart note were added to
+      content/modules/ROOT/pages/02-details.adoc. Root causes were confirmed on the live
+      instance on 2026-09-11 and 2026-09-13.
+
+  - id: "2026-09-13-003"
+    timestamp: "2026-09-13T13:30:00Z"
+    author: "sandrotanaka"
+    status: open
+    type: action
+    content: >-
+      Run scripts/post-provision.sh end to end on a freshly provisioned instance (not one
+      already patched by hand) and time it; the 1.0 promotion step has only been reasoned
+      about, not executed from a clean state. Confirm the tag webhook fires from an
+      API-created tag and that no promotion MR is opened when values-prod.yaml already says
+      1.0. Then decide whether the instructor runs it on all 20 instances before the
+      session or each group's driver runs it during Module 2.
+
+  - id: "2026-09-13-004"
+    timestamp: "2026-09-13T13:30:00Z"
+    author: "sandrotanaka"
+    status: open
+    type: decision
+    content: >-
+      Red Hat Connectivity Link: proposal and strategy written (Claude artifact
+      "Connectivity Link no Parasol"). Given the individual-initiative constraint, RHCL
+      would be delivered as an extra Argo CD Application in openshift-gitops pointing at a
+      repo of our own (operator, gateway, AuthPolicy, RateLimitPolicy), added by the
+      post-provision script; the bootstrap app-of-apps does not prune Applications it did
+      not create. Pending: go/no-go, and a spike on Gateway API vs the existing OSSM 3.2
+      ambient install and on exposing the gateway through a Route on CNV.
+
+  - id: "2026-09-13-005"
+    timestamp: "2026-09-13T13:30:00Z"
+    author: "sandrotanaka"
+    status: open
+    type: note
+    content: >-
+      Known defects in the provisioned demo that the script cannot fix because the Argo CD
+      bootstrap reverts them (dynamic-plugins and app-config are selfHeal-managed): the
+      RHDH Image Registry tab crashes on components without a quay.io/repository-slug
+      annotation (the mount point condition should include hasAnnotation), and the demo
+      loads a foreign catalog (ai-customer-service-platform) whose owner group website-team
+      does not exist. Documented in 02-details as "ignore during the demo".
+
+  - id: "2026-09-13-006"
+    timestamp: "2026-09-13T16:50:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-13T16:50:00Z"
+    resolved_by: "sandrotanaka"
+    type: note
+    content: >-
+      RHCL spike completed on cluster-ql7cw. Installed rhcl-operator 1.4.3 + Kuadrant CR +
+      console plugin (scripts/rhcl/install.sh); north-south Gateway of class istio exposed
+      through an edge Route (scripts/rhcl/gateway.sh; the namespace needs
+      istio.io/dataplane-mode=ambient because the demo's Istio CR restricts discovery);
+      HTTPRoute + API-key AuthPolicy (apiKey.allNamespaces: true is mandatory) +
+      RateLimitPolicy 10 req/10s per consumer on parasol-insurance-prod
+      (scripts/rhcl/parasol-api.sh). End-to-end test: 401 without key, 200 with key,
+      429 after the 10th call, original Parasol Route unaffected. This is the Module 3
+      "part 1b" beat working; content still to be written.
+
+  - id: "2026-09-13-007"
+    timestamp: "2026-09-13T16:50:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-13T19:50:00Z"
+    resolved_by: "sandrotanaka"
+    type: action
+    content: >-
+      Kuadrant Developer Hub plugins (0.4.0) prepared in scripts/rhdh-kuadrant/apply.sh but
+      not yet executed: it turns on the permission framework + RBAC for the whole RHDH,
+      so after running it walk Modules 4-7 as dev1 and pe1 before accepting. Plugin is
+      declared for RHDH 1.10; instance runs 1.9.8. rollback.sh restores the backup.
+
+  - id: "2026-09-13-008"
+    timestamp: "2026-09-13T19:50:00Z"
+    author: "sandrotanaka"
+    status: open
+    type: note
+    content: >-
+      Kuadrant Developer Hub plugins 0.4.0 enabled on cluster-ql7cw (scripts/rhdh-kuadrant/
+      apply.sh + db-pool.sh). Works on RHDH 1.9.8. Two things found and fixed: (1) enabling
+      RBAC + Kuadrant backends exhausts PostgreSQL max_connections=100 ("too many clients"),
+      fixed by knex pool min 0/max 4 in app-config and POSTGRESQL_MAX_CONNECTIONS=300;
+      (2) rbac-policy is subPath-mounted, so policy edits need a pod restart. Headless walk
+      (walk-rhdh.mjs) as dev1 and pe1 through Modules 4-7 pages: no denials left; the audit
+      log showed lightspeed.chat.update missing from the demo policy (added), plus own-scoped
+      Kuadrant permissions for api-admin (added). Still manual: running the template and a
+      Lightspeed conversation as dev1.
+
+  - id: "2026-09-13-009"
+    timestamp: "2026-09-13T20:05:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-13T20:05:00Z"
+    resolved_by: "sandrotanaka"
+    type: note
+    content: >-
+      Closed the four follow-ups of the RHCL work. (1) Module 3 Part 1b screenshots taken
+      headlessly from the console as pe1 (Gateways, HTTPRoute, policy topology, policies).
+      (2) post-provision.sh gained WITH_RHCL=1 / WITH_RHDH_PLUGINS=1 and fetches the sibling
+      scripts when piped from curl. (3) api-product.sh publishes the claims API as a
+      Connectivity Link API Product (parasol-claims-api; the CR name becomes an API entity,
+      so it must not collide with the existing parasol-insurance-api) with a gold/silver/
+      bronze PlanPolicy; visible in Developer Hub API Products and in the catalog.
+      (4) Phase 2 spike llm-gateway.sh works end to end: external MaaS behind the gateway via
+      ServiceEntry + DestinationRule (TLS origination) + HTTPRoute with Hostname backend,
+      platform key validated by AuthPolicy, provider key set by a RequestHeaderModifier on
+      the route (Authorino header injection appends and the provider rejects it), and a
+      TokenRateLimitPolicy of 1500 tokens/min per team: 401 / 200 / 429 confirmed with real
+      completions. The Section 3 application was deliberately not switched to the gateway.
+
+  - id: "2026-09-13-010"
+    timestamp: "2026-09-13T20:05:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-13T21:30:00Z"
+    resolved_by: "sandrotanaka"
+    type: decision
+    content: >-
+      Decide whether the Section 3 app (llm-routing) should consume the LLM through the
+      gateway (base_url http://llm.parasol-gateway.svc/v1 + a platform key, both in Vault
+      under secrets/litellm/credentials) for a Module 7 beat about token budgets, and whether
+      the API Product / key-request flow becomes a Module 4 beat. Both change the demo
+      roteiro and need timing in the 2-hour session.
+
+  - id: "2026-09-13-011"
+    timestamp: "2026-09-13T20:20:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-13T20:20:00Z"
+    resolved_by: "sandrotanaka"
+    type: note
+    content: >-
+      Security review of llm-gateway.sh (automated) flagged a provider key literal in the
+      HTTPRoute (readable in the console and by the RHDH Kuadrant plugin) and an over-broad
+      authorization scope (allNamespaces API keys, allowedRoutes from All). Fixed and
+      re-verified (401 / 200 / 429): platform key sent in X-Platform-Key, key Secrets kept in
+      kuadrant-system (admin-only) with the provider key as a field, Authorino injects the
+      upstream Authorization from auth.identity.data with @base64:decode, no allNamespaces;
+      gateway listener only accepts routes from namespaces labelled
+      parasol.rhdp.io/gateway-access=true (gateway.sh labels parasol-insurance-prod).
+      Known remaining trade-off: parasol-api.sh keeps allNamespaces: true because the
+      Developer Hub key-request flow creates key Secrets outside kuadrant-system.
+
+  - id: "2026-09-13-012"
+    timestamp: "2026-09-13T21:30:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-13T21:30:00Z"
+    resolved_by: "sandrotanaka"
+    type: note
+    content: >-
+      Both beats accepted and written: Module 4 Part 4 (API Products + self-service keys) and
+      Module 7 Part 4 (LLM token budgets), with the Section 3 app dev2/llm-routing switched to
+      the gateway (llm-switch-app.sh: Vault kv mount + one line in the user's gitops repo).
+      Hard-won findings on RHCL 1.4.3, all encoded in the scripts: (1) the developer portal
+      controller must be enabled on the Kuadrant CR (components.developerPortal) or APIKey
+      requests never get a status; it copies approved keys into kuadrant-system with the
+      AuthPolicy's labels, so parasol-api keeps keys there and needs no allNamespaces;
+      (2) a route has one effective RateLimitPolicy and the PlanPolicy-derived one wins, so the
+      10 req/10 s burst limit is attached to the Gateway as an override scoped to the API host;
+      plan daily quotas are declared, not the effective limiter; (3) any policy change on the
+      route resets pending/approved portal requests (re-approval needed), so run api-product
+      last and do not touch policies during the session; (4) the wasm shim breaks token
+      counting ("CelError UndeclaredReference(string)") when the LLM AuthPolicy has more than
+      one authentication method; keep a single Bearer identity; (5) the operator stops
+      programming limits if a route without sectionName can pair with the internal llm
+      listener; pin parentRefs.sectionName; (6) Envoy restarts on policy reloads; the gateway
+      runs 2 replicas and tests wait for stability; (7) LLM completions need HTTPRoute
+      timeouts (120s); (8) two token budgets in one TokenRateLimitPolicy via `when`
+      predicates (teams 20k/min, stage key team-demo 1.5k/min) work once (5) is fixed.
+      Verified at the end: API 401/200/429 for partner1 and for the portal key, LLM 401/200
+      and 429 after ~1500 tokens on the stage key, application classifying through the gateway
+      on its own budget.
+
+  - id: "2026-09-14-013"
+    timestamp: "2026-09-14T00:30:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-14T00:30:00Z"
+    resolved_by: "sandrotanaka"
+    type: note
+    content: >-
+      Observability layer added post-provisioning (scripts/observability): Tempo (monolithic, PV),
+      OpenTelemetry collector, Istio tracing provider, Limitador/Authorino spans, Kiali reading
+      Tempo, Grafana (operator v5) with Thanos + Tempo datasources and ten dashboards (Istio and
+      Kuadrant upstream, two custom built by build-dashboards.py), Grafana links in Kiali, Envoy
+      access logs on the gateway; Developer Hub got the Kiali "Service Mesh" tab and Grafana/Jaeger
+      links on the Parasol entities. Findings: (1) istiod's discoverySelectors (ambient namespaces
+      only) mean a mesh-wide Telemetry in istio-system is never seen and Services outside those
+      namespaces are unknown to the gateway: one Telemetry per ambient namespace and a
+      ServiceEntry for every off-mesh backend (collector, Tempo, Developer Hub); (2) the
+      app-of-apps re-applies the child Applications' ignoreDifferences list, so protecting the
+      Istio and Kiali CRs from selfHeal needs an ignoreDifferences on app-of-apps for that field
+      first; (3) the Kiali plugin cannot use the demo's Kiali (auth strategy openshift): a second
+      view-only instance with token auth in the same namespace keeps the demo's Kiali untouched;
+      (4) the Grafana operator remembers dashboards as applied even when the instance was
+      recreated, so Grafana needs a PVC and the script recreates the dashboard CRs when the API
+      shows fewer than expected; (5) the Backstage Grafana plugin has no export for RHDH 1.9
+      (bs_1.45), so Grafana reaches Developer Hub through entity links and the Kiali tab.
+      Content: Module 3 Part 2 got the end-to-end trace and Grafana beats; 02-details documents
+      the layer and the WITH_OBSERVABILITY / WITH_KIALI_PLUGIN flags.
+
+  - id: "2026-09-14-014"
+    timestamp: "2026-09-14T00:35:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-14T00:35:00Z"
+    resolved_by: "sandrotanaka"
+    type: note
+    content: >-
+      Developer Hub's MCP server (mcp-actions, the tools Lightspeed uses) published through the
+      parasol-gateway with Connectivity Link (scripts/rhcl/mcp-gateway.sh): X-API-Key platform
+      keys, Backstage token injected by Authorino, 10 calls/10 s per key; Tempo's query API
+      published the same way (traces-api.sh) so the end-to-end trace test runs from Postman.
+      Findings: (1) the rhdh namespace has NetworkPolicies (router + itself only), so the gateway
+      needs an explicit ingress policy on the Backstage pods, and a merge patch on a podSelector
+      adds labels instead of replacing them; (2) the gateway-level override RateLimitPolicy from
+      parasol-api.sh overrides every route-level policy on the gateway, so new limits are added
+      to it with a host predicate (a policy change there re-evaluates the API route, portal
+      approvals survived this time); (3) injecting Authorization works when the client does not
+      send one (custom header for the key); (4) the backend emits no spans (no OpenTelemetry in
+      the Quarkus image), so the trace ends at the gateway's hop to parasol-insurance with its
+      status and latency. Postman folders 6 (MCP) and 7 (end-to-end trace) added; Module 4
+      Part 4 got the MCP beat.
+
+  - id: "2026-09-14-015"
+    timestamp: "2026-09-14T05:50:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-14T05:50:00Z"
+    resolved_by: "sandrotanaka"
+    type: decision
+    content: >-
+      Webinar "Como turbinar sua Engenharia de Plataforma com IA": the instance doubles as the
+      recorded demo. Journey and executable script in webinar/roteiro.md (35 min with pauses).
+      Personas tanaka-dev / tanaka-pe with avatars (scripts/users/create-persona.sh: Keycloak needs
+      "picture" as a managed user-profile attribute, a partial PUT wipes the user's names and forces
+      VERIFY_PROFILE, avatars served from public GitLab project rhdh/avatars allowed in the RHDH CSP).
+      Lightspeed suggestion cards replaced by the three journey questions in pt-BR
+      (lightspeed-prompts.sh). Golden Path run through the UI as tanaka-dev (12 s scaffolding,
+      5 min pipeline, first pipeline only runs on a push after the bootstrap); the template skeleton
+      now gives created components their own Quay repository, the Kiali tab and observability links
+      (it pointed the Image Registry tab at the foundational repo). AI use cases: (1) an AI agent
+      authors a Golden Path from an existing one and registers it through the governed MCP endpoint
+      (validated end to end: MR !1 + branch ai-golden-path-postgresql in rhdh/rhdh-templates,
+      register/unregister via MCP tools; unregister needs type.locationId); (2) OpenShift Lightspeed
+      through the LLM gateway was built and validated (30 s, uses cluster tools) but cut from the
+      webinar scope by the user; script kept, instance removed; (3) DevSpaces assistants via the
+      gateway only if DevSpaces enters the video (not in the current journey). Old failed
+      PipelineRuns and DevSpaces workspaces deleted for visual clarity. Recording rules: freeze
+      policies and layers 24 h before, validate + persona walk on the day, Lightspeed answer
+      pre-warmed, Golden Path result shown on the ready namespace.
+
+  - id: "2026-09-14-016"
+    timestamp: "2026-09-14T16:40:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-14T16:40:00Z"
+    resolved_by: "sandrotanaka"
+    type: decision
+    content: >-
+      Repository reconciliation: between 05:10 and 08:40 -03 another Production Support surface
+      changed the instance and left uncommitted work. Reviewed and adopted as desired state:
+      (1) ACS "Security" tab in Developer Hub (scripts/rhdh-kuadrant/acs.sh: read-only Analyst
+      token in secret rhdh/acs-secret, plugin overlay bs_1.45.3__0.1.1, proxy /acs, annotation
+      acs/deployment-name on the parasol components via enrich-catalog.py and the rhdh-templates
+      entities); (2) Quay tab gated on isQuayAvailable (quay.sh) so components without a
+      repository slug no longer crash the tab; (3) ClusterRoleBinding cluster-monitoring-view for
+      the kiali-rhdh service account (metrics in the Service Mesh tab); (4) tracing.sh labels
+      ambient namespaces with istio.io/ingress-use-waypoint=true so gateway traffic traverses the
+      waypoint and emits waypoint spans (applied so far to the two prod namespaces only; the
+      other namespaces get it on the next tracing.sh run). One fix applied before committing:
+      acs.sh selected the Argo ignoreDifferences entry by list index; now by kind. This commit is
+      the new freeze point after the external changes; T02-T05 do not depend on any of them and
+      T06 is not blocked. Reset/validation must be repeated before recording as usual.
+
+  - id: "2026-09-15-017"
+    timestamp: "2026-09-15T14:40:00Z"
+    author: "sandrotanaka"
+    status: resolved
+    resolved_at: "2026-09-15T14:40:00Z"
+    resolved_by: "sandrotanaka"
+    type: note
+    content: >-
+      Root cause of the parasol-gateway pod churn (ages of 17-118 s, 503 blips, "fewer than 2
+      replicas" warnings) found after the cluster restart: the demo's ztunnel-healer CronJob
+      (istio-mesh-tools, Argo app ztunnel-healer, every 2 min) deletes Running pods in ambient
+      namespaces whose HBONE port 15008 refuses; Istio gateway pods are never enrolled in ztunnel,
+      so both were killed every run since the gateway was installed (60 kills/hour). Fix in
+      scripts/rhcl/gateway.sh: parasol-gateway appended to the healer's EXCLUDE_NS, with an
+      ignoreDifferences on the Argo app for the container env so selfHeal keeps it. Earlier
+      attributions of gateway restarts to policy reloads were partly wrong. Same day: cluster
+      restart repaired with post-provision.sh (Parasol HBONE loss in 5 namespaces, RHDH OIDC 500),
+      validation 0 failed, T06 rehearsal reset executed (MR !2 closed, request branch deleted).

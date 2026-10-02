@@ -23,7 +23,8 @@ The instructor delivers Section 3 of the Advanced App Platform demo live, time p
 | 1 | OpenShift AI positioning and MaaS endpoint | 5 min |
 | 2 | RHDH self-service AI feature provisioning | 5 min |
 | 3 | LangChain4j intelligent email routing application | 8 min |
-| 4 | Objection handling — GPU, lock-in, production readiness | 4 min |
+| 3b | Governing LLM consumption — Connectivity Link token budgets (optional layer) | 4 min |
+| 4 | Objection handling — GPU, lock-in, production readiness | 3 min |
 | 5 | Q&A | ~3 min |
 
 ## Demo Flow (Section 3)

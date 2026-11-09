@@ -1,0 +1,108 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: request-postgresql-database
+  title: Request PostgreSQL Database
+  description: Request a PostgreSQL database for your application (creates a merge request for platform team approval)
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - postgresql
+    - database
+    - infrastructure
+    - request
+spec:
+  owner: rhdh
+  type: resource
+
+  parameters:
+    - title: Database Details
+      required:
+        - name
+        - owner
+        - namespace
+      properties:
+        name:
+          title: Database Name
+          type: string
+          description: Name of the database instance (lowercase, hyphens allowed)
+          pattern: "^[a-z][a-z0-9-]*$"
+        owner:
+          title: Owning Team
+          type: string
+          description: Team that owns this database
+          ui:field: EntityPicker
+          ui:options:
+            catalogFilter:
+              kind: Group
+        namespace:
+          title: Target Namespace
+          type: string
+          description: OpenShift namespace where the database will run
+          pattern: "^[a-z][a-z0-9-]*$"
+        size:
+          title: Storage Size
+          type: string
+          description: Persistent volume size
+          default: 5Gi
+          enum:
+            - 5Gi
+            - 20Gi
+            - 50Gi
+          enumNames:
+            - 5 GiB (development)
+            - 20 GiB (staging)
+            - 50 GiB (production)
+        version:
+          title: PostgreSQL Version
+          type: string
+          default: "16"
+          enum:
+            - "15"
+            - "16"
+        description:
+          title: Description
+          type: string
+          description: What this database is used for
+
+  steps:
+    - id: fetch-skeleton
+      name: Render Database Resources
+      action: fetch:template
+      input:
+        url: ./skeleton/
+        values:
+          name: ${{ parameters.name }}
+          owner: ${{ parameters.owner }}
+          namespace: ${{ parameters.namespace }}
+          size: ${{ parameters.size }}
+          version: ${{ parameters.version }}
+          description: ${{ parameters.description }}
+          gitlab_host: gitlab-gitlab.apps.cluster-ql7cw.dyn.redhatworkshops.io
+
+    - id: open-mr
+      name: Open Merge Request
+      action: publish:gitlab:merge-request
+      input:
+        repoUrl: gitlab-gitlab.apps.cluster-ql7cw.dyn.redhatworkshops.io?repo=infra-app-of-apps&owner=rhdh
+        branchName: request/postgresql-${{ parameters.name }}
+        title: "Request PostgreSQL Database: ${{ parameters.name }}"
+        description: |
+          **Database:** `${{ parameters.name }}`
+          **Owner:** ${{ parameters.owner }}
+          **Namespace:** ${{ parameters.namespace }}
+          **Size:** ${{ parameters.size }}
+          **Version:** PostgreSQL ${{ parameters.version }}
+          **Description:** ${{ parameters.description }}
+
+          ---
+          Requested via Red Hat Developer Hub.
+        removeSourceBranch: true
+        reviewers:
+          - pe1
+          - pe2
+
+  output:
+    links:
+      - title: Merge Request
+        url: ${{ steps['open-mr'].output.mergeRequestUrl }}

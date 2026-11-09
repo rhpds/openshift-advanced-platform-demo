@@ -1,0 +1,645 @@
+{
+ "uid": "parasol-overview",
+ "title": "Parasol Platform Overview",
+ "tags": [
+  "parasol",
+  "custom"
+ ],
+ "timezone": "browser",
+ "schemaVersion": 39,
+ "version": 1,
+ "editable": true,
+ "refresh": "30s",
+ "time": {
+  "from": "now-1h",
+  "to": "now"
+ },
+ "templating": {
+  "list": [
+   {
+    "name": "namespace",
+    "label": "Namespace",
+    "type": "query",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "prometheus"
+    },
+    "includeAll": true,
+    "multi": true,
+    "allValue": "parasol-.*",
+    "current": {
+     "text": "All",
+     "value": "$__all"
+    },
+    "refresh": 2,
+    "query": {
+     "query": "label_values(istio_requests_total{destination_workload_namespace=~\"parasol-.*\"}, destination_workload_namespace)",
+     "refId": "ns"
+    },
+    "definition": "label_values(istio_requests_total{destination_workload_namespace=~\"parasol-.*\"}, destination_workload_namespace)"
+   }
+  ]
+ },
+ "panels": [
+  {
+   "id": 1,
+   "type": "row",
+   "title": "Traffic (Istio ambient: gateway + waypoints)",
+   "collapsed": false,
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 24,
+    "h": 1
+   },
+   "panels": []
+  },
+  {
+   "id": 3,
+   "type": "stat",
+   "title": "Requests / s",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     },
+     "expr": "sum(sum by (destination_workload_namespace) (max by (pod, destination_workload_namespace) (rate(istio_requests_total{destination_workload_namespace=~\"$namespace\"}[2m]))))",
+     "legendFormat": "req/s",
+     "refId": "C"
+    }
+   ],
+   "gridPos": {
+    "x": 0,
+    "y": 1,
+    "w": 4,
+    "h": 4
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "reqps"
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "area"
+   }
+  },
+  {
+   "id": 5,
+   "type": "stat",
+   "title": "5xx ratio",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     },
+     "expr": "(sum(sum by (destination_workload_namespace) (max by (pod, destination_workload_namespace) (rate(istio_requests_total{destination_workload_namespace=~\"$namespace\",response_code=~\"5..\"}[2m])))) / sum(sum by (destination_workload_namespace) (max by (pod, destination_workload_namespace) (rate(istio_requests_total{destination_workload_namespace=~\"$namespace\"}[2m]))))) or vector(0)",
+     "legendFormat": "5xx",
+     "refId": "E"
+    }
+   ],
+   "gridPos": {
+    "x": 4,
+    "y": 1,
+    "w": 4,
+    "h": 4
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percentunit",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "orange",
+        "value": 0.01
+       },
+       {
+        "color": "red",
+        "value": 0.05
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "area"
+   }
+  },
+  {
+   "id": 7,
+   "type": "stat",
+   "title": "p95 latency",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     },
+     "expr": "max(histogram_quantile(0.95, sum by (le, destination_workload_namespace) (max by (pod, le, destination_workload_namespace) (rate(istio_request_duration_milliseconds_bucket{destination_workload_namespace=~\"$namespace\"}[5m])))))",
+     "legendFormat": "p95",
+     "refId": "G"
+    }
+   ],
+   "gridPos": {
+    "x": 8,
+    "y": 1,
+    "w": 4,
+    "h": 4
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "ms"
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "area"
+   }
+  },
+  {
+   "id": 9,
+   "type": "stat",
+   "title": "mTLS share of requests",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     },
+     "expr": "(sum(sum by (connection_security_policy) (max by (pod, connection_security_policy) (rate(istio_requests_total{destination_workload_namespace=~\"$namespace\",connection_security_policy=\"mutual_tls\"}[2m])))) / sum(sum by (connection_security_policy) (max by (pod, connection_security_policy) (rate(istio_requests_total{destination_workload_namespace=~\"$namespace\"}[2m]))))) or vector(0)",
+     "legendFormat": "mTLS",
+     "refId": "I"
+    }
+   ],
+   "gridPos": {
+    "x": 12,
+    "y": 1,
+    "w": 4,
+    "h": 4
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percentunit"
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "area"
+   }
+  },
+  {
+   "id": 11,
+   "type": "timeseries",
+   "title": "Requests by namespace and response code",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     },
+     "expr": "sum by (destination_workload_namespace, response_code) (max by (pod, destination_workload_namespace, response_code) (rate(istio_requests_total{destination_workload_namespace=~\"$namespace\"}[2m])))",
+     "legendFormat": "{{destination_workload_namespace}} {{response_code}}",
+     "refId": "K"
+    }
+   ],
+   "gridPos": {
+    "x": 0,
+    "y": 5,
+    "w": 12,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "reqps"
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "id": 13,
+   "type": "timeseries",
+   "title": "p95 latency by namespace",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     },
+     "expr": "histogram_quantile(0.95, sum by (le, destination_workload_namespace) (max by (pod, le, destination_workload_namespace) (rate(istio_request_duration_milliseconds_bucket{destination_workload_namespace=~\"$namespace\"}[5m]))))",
+     "legendFormat": "{{destination_workload_namespace}}",
+     "refId": "M"
+    }
+   ],
+   "gridPos": {
+    "x": 12,
+    "y": 5,
+    "w": 12,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "ms"
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "id": 16,
+   "type": "table",
+   "title": "Top services (req/s)",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     },
+     "expr": "topk(10, sum by (destination_service_name, destination_workload_namespace) (max by (pod, destination_service_name, destination_workload_namespace) (rate(istio_requests_total{destination_workload_namespace=~\"$namespace\"}[2m]))))",
+     "legendFormat": "",
+     "refId": "P",
+     "format": "table",
+     "instant": true
+    }
+   ],
+   "gridPos": {
+    "x": 16,
+    "y": 1,
+    "w": 8,
+    "h": 4
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "reqps"
+    },
+    "overrides": []
+   },
+   "options": {
+    "showHeader": true
+   }
+  },
+  {
+   "id": 17,
+   "type": "row",
+   "title": "Connectivity Link (Authorino + Limitador on the Parasol gateway)",
+   "collapsed": false,
+   "gridPos": {
+    "x": 0,
+    "y": 13,
+    "w": 24,
+    "h": 1
+   },
+   "panels": []
+  },
+  {
+   "id": 19,
+   "type": "timeseries",
+   "title": "Authorization decisions / s",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     },
+     "expr": "sum by (status) (rate(auth_server_response_status[2m]))",
+     "legendFormat": "{{status}}",
+     "refId": "S"
+    }
+   ],
+   "gridPos": {
+    "x": 0,
+    "y": 14,
+    "w": 8,
+    "h": 7
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "reqps"
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "description": "Authorino: OK = API key accepted, UNAUTHENTICATED = missing/invalid key"
+  },
+  {
+   "id": 22,
+   "type": "timeseries",
+   "title": "Rate limiting: authorized vs limited / s",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     },
+     "expr": "sum by (limitador_namespace) (rate(authorized_calls[2m]))",
+     "legendFormat": "allowed {{limitador_namespace}}",
+     "refId": "U"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     },
+     "expr": "sum by (limitador_namespace) (rate(limited_calls[2m]))",
+     "legendFormat": "limited (429) {{limitador_namespace}}",
+     "refId": "V"
+    }
+   ],
+   "gridPos": {
+    "x": 8,
+    "y": 14,
+    "w": 8,
+    "h": 7
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "reqps"
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "id": 24,
+   "type": "timeseries",
+   "title": "Gateway responses by code (Connectivity Link decisions)",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     },
+     "expr": "sum by (response_code) (max by (pod, response_code) (rate(istio_requests_total{source_workload=\"parasol-gateway-istio\"}[2m])))",
+     "legendFormat": "{{response_code}}",
+     "refId": "X"
+    }
+   ],
+   "gridPos": {
+    "x": 16,
+    "y": 14,
+    "w": 8,
+    "h": 7
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "reqps"
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "description": "401 = Authorino rejected, 429 = Limitador rate limit, 200 = forwarded to Parasol"
+  },
+  {
+   "id": 25,
+   "type": "row",
+   "title": "Platform health",
+   "collapsed": false,
+   "gridPos": {
+    "x": 0,
+    "y": 21,
+    "w": 24,
+    "h": 1
+   },
+   "panels": []
+  },
+  {
+   "id": 27,
+   "type": "timeseries",
+   "title": "Container restarts (1h) in Parasol namespaces",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     },
+     "expr": "sum by (namespace) (increase(kube_pod_container_status_restarts_total{namespace=~\"parasol-.*\"}[1h]))",
+     "legendFormat": "{{namespace}}",
+     "refId": "A"
+    }
+   ],
+   "gridPos": {
+    "x": 0,
+    "y": 22,
+    "w": 8,
+    "h": 7
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "id": 29,
+   "type": "bargauge",
+   "title": "Pipeline runs (24h) by namespace and status",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     },
+     "expr": "sum by (namespace, status) (increase(tekton_pipelines_controller_pipelinerun_duration_seconds_count{namespace=~\"parasol-.*\"}[24h]))",
+     "legendFormat": "{{namespace}} {{status}}",
+     "refId": "C",
+     "instant": true
+    }
+   ],
+   "gridPos": {
+    "x": 8,
+    "y": 22,
+    "w": 8,
+    "h": 7
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "options": {
+    "orientation": "horizontal",
+    "displayMode": "gradient",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    }
+   }
+  },
+  {
+   "id": 31,
+   "type": "piechart",
+   "title": "Argo CD applications by health",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     },
+     "expr": "count by (health_status) (argocd_app_info{namespace=\"rhdh-gitops\"})",
+     "legendFormat": "{{health_status}}",
+     "refId": "E",
+     "instant": true
+    }
+   ],
+   "gridPos": {
+    "x": 16,
+    "y": 22,
+    "w": 8,
+    "h": 7
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "legend": {
+     "displayMode": "list",
+     "placement": "right"
+    }
+   }
+  }
+ ]
+}

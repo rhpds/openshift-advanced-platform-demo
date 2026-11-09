@@ -24,7 +24,8 @@ The instructor delivers Section 2 of the Advanced App Platform demo live. Each g
 | 2 | Dependency Analytics CVE detection | 3 min |
 | 3 | Secure Tekton pipeline — ACS, SBOM, TAS, Conforma | 12 min |
 | 4 | TPA supply chain traceability | 3 min |
-| 5 | Q&A | ~5 min |
+| 4b | API Products and self-service API keys — Connectivity Link (optional layer) | 4 min |
+| 5 | Q&A | ~3 min |
 
 ## Demo Flow (Section 2)
 
@@ -50,6 +51,9 @@ The instructor follows the standard demo script for Section 2. Key beats, in ord
 
 7. **Conforma attestation**
    Conforma enforces a policy: only signed images with a passing ACS scan and a valid SBOM can be promoted. Talking point: "Policy is code — it lives in Git, it's versioned, and it's enforced automatically at every pipeline run."
+
+8b. **API Products and self-service API keys** *(only on instances prepared with the optional RHCL layer, see 02-details)*
+   As dev1: Connectivity Link → API Products shows the claims API published with gold/silver/bronze plans; My API Keys → Request Access (silver). As pe1: API Key Approval → Approve. Back as dev1 the key is Active; a curl against the governed endpoint returns 200. Talking point: "Request, approval and key are Kubernetes resources; Developer Hub is the interface, Connectivity Link is the system of record, the plan is enforced at the gateway from the moment of approval."
 
 8. **TPA supply chain traceability**
    Show TPA linking a CVE advisory to the specific SBOM components that are affected, across every image in the catalog. Talking point: "When a new CVE drops at 2am, you know in minutes which of your applications are affected — without manually checking every image."

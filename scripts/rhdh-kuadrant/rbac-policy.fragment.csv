@@ -1,0 +1,47 @@
+p, role:default/plugins, quay.view.read, read, allow
+p, role:default/plugins, scorecard.metric.read, read, allow
+p, role:default/plugins, bulk.import, use, allow
+p, role:default/api-admin, kuadrant.planpolicy.read, read, allow
+p, role:default/api-admin, kuadrant.planpolicy.list, read, allow
+p, role:default/api-admin, kuadrant.authpolicy.list, read, allow
+p, role:default/api-admin, kuadrant.ratelimitpolicy.list, read, allow
+p, role:default/api-admin, kuadrant.apiproduct.create, create, allow
+p, role:default/api-admin, kuadrant.apiproduct.read.all, read, allow
+p, role:default/api-admin, kuadrant.apiproduct.update.all, update, allow
+p, role:default/api-admin, kuadrant.apiproduct.delete.all, delete, allow
+p, role:default/api-admin, kuadrant.apiproduct.list, read, allow
+p, role:default/api-admin, kuadrant.httproute.list, read, allow
+p, role:default/api-admin, kuadrant.gateway.list, read, allow
+p, role:default/api-admin, kuadrant.mcpgatewayextension.list, read, allow
+p, role:default/api-admin, kuadrant.mcpserverregistration.list, read, allow
+p, role:default/api-admin, kuadrant.apikey.create, create, allow, apiproduct:*/*
+p, role:default/api-admin, kuadrant.apikey.read.all, read, allow
+p, role:default/api-admin, kuadrant.apikey.update.all, update, allow
+p, role:default/api-admin, kuadrant.apikey.delete.all, delete, allow
+p, role:default/api-admin, kuadrant.apikey.approve, update, allow
+p, role:default/api-admin, kuadrant.apiproduct.read.own, read, allow
+p, role:default/api-admin, kuadrant.apiproduct.update.own, update, allow
+p, role:default/api-admin, kuadrant.apiproduct.delete.own, delete, allow
+p, role:default/api-admin, kuadrant.apikey.list, read, allow
+p, role:default/api-consumer, kuadrant.apikey.list, read, allow
+p, role:default/plugins, lightspeed.chat.update, update, allow
+p, role:default/platformengineer, scaffolder.template.management, use, allow
+p, role:default/api-admin, kuadrant.apikey.read.own, read, allow
+p, role:default/api-admin, kuadrant.apikey.update.own, update, allow
+p, role:default/api-admin, kuadrant.apikey.delete.own, delete, allow
+p, role:default/api-admin, policy.entity.read, read, allow
+p, role:default/api-admin, policy.entity.create, create, allow
+p, role:default/api-admin, policy.entity.update, update, allow
+p, role:default/api-admin, policy.entity.delete, delete, allow
+p, role:default/api-consumer, kuadrant.apiproduct.read.all, read, allow
+p, role:default/api-consumer, kuadrant.apiproduct.list, read, allow
+p, role:default/api-consumer, kuadrant.planpolicy.list, read, allow
+p, role:default/api-consumer, kuadrant.authpolicy.list, read, allow
+p, role:default/api-consumer, kuadrant.ratelimitpolicy.list, read, allow
+p, role:default/api-consumer, kuadrant.httproute.list, read, allow
+p, role:default/api-consumer, kuadrant.apikey.create, create, allow, apiproduct:*/*
+p, role:default/api-consumer, kuadrant.apikey.read.own, read, allow
+p, role:default/api-consumer, kuadrant.apikey.update.own, update, allow
+p, role:default/api-consumer, kuadrant.apikey.delete.own, delete, allow
+g, group:default/platformengineers, role:default/api-admin
+g, group:default/developers, role:default/api-consumer

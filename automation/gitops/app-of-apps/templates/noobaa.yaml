@@ -25,7 +25,14 @@ spec:
           noobaa:
             subscription:
               source: {{ include "app-of-apps.operatorSource" . }}
+{{- if .Values.noobaa.operator_channel }}
+              channel: {{ .Values.noobaa.operator_channel }}
+{{- end }}
         noobaa:
           nameOverride: {{ .Values.noobaa.name }}
+{{- if .Values.noobaa.storage_class }}
+          backingStore:
+            storageClass: {{ .Values.noobaa.storage_class }}
+{{- end }}
 {{ include "app-of-apps.syncPolicy" . | indent 2 }}
 {{- end }}

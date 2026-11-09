@@ -196,6 +196,10 @@ ocp4_etx_app_platform_openshift_pipelines_namespace: openshift-operators
 ocp4_etx_app_platform_noobaa_install: true
 ocp4_etx_app_platform_noobaa_namespace: openshift-storage
 ocp4_etx_app_platform_noobaa_name: noobaa
+# NooBaa operator channel (override for AWS with stable-4.20)
+ocp4_etx_app_platform_noobaa_operator_channel: stable-4.16
+# NooBaa storage class (override for AWS with gp3-csi)
+ocp4_etx_app_platform_noobaa_storage_class: ocs-external-storagecluster-ceph-rbd
 
 # ------------------------------------------------
 # Web Terminal

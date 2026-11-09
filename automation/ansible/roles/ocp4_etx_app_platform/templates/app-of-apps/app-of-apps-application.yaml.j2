@@ -99,6 +99,8 @@ spec:
           enabled: {{ ocp4_etx_app_platform_noobaa_install }}
           name: {{ ocp4_etx_app_platform_noobaa_name }}
           namespace: {{ ocp4_etx_app_platform_noobaa_namespace }}
+          operator_channel: {{ ocp4_etx_app_platform_noobaa_operator_channel }}
+          storage_class: {{ ocp4_etx_app_platform_noobaa_storage_class }}
 
         gitlab:
           name: {{ ocp4_etx_app_platform_gitlab_gitops_name }}

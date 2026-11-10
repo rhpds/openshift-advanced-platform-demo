@@ -1,0 +1,377 @@
+---
+# E2E — End-to-end test
+# Verifies the OpenShift Advanced App Platform demo is deliverable end to end:
+# every component a presenter touches while walking through the seven content
+# modules (content/modules/ROOT/nav.adoc) is deployed and reporting healthy.
+#
+# This is an instructor-led follow-along demo, not a hands-on guided lab — there
+# are no per-module solve/validate scripts to replay. Instead each module below
+# asserts that its backing platform components (operators, CRs, workloads, and
+# the presenter-facing routes) are up, so a dry run confirms the demo can be
+# delivered without surprises.
+#
+# Non-destructive: reads cluster state and performs GET requests against public
+# routes only. Uses the ambient KUBECONFIG the provisioning role relies on.
+#
+# Exit 0 = demo is deliverable end to end, non-zero = a module is not ready.
+#
+# FIRST PASS: component/route readiness per module. Follow-up work should add
+# active interaction (triggering the Tekton pipeline, exercising the RHDH
+# self-service template, and driving a live AI inference request) once the demo
+# has been run on an integration deploy and the exact flows are confirmed.
+
+- name: "OpenShift Advanced App Platform — end-to-end demo readiness"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    # Resolve the cluster ingress subdomain so route URLs can be built the same
+    # way the provisioning role does (r_openshift_subdomain in workload.yml).
+    e2e_route_timeout: 20
+  tasks:
+    - name: "Resolve cluster ingress subdomain"
+      kubernetes.core.k8s_info:
+        api_version: operator.openshift.io/v1
+        kind: IngressController
+        name: default
+        namespace: openshift-ingress-operator
+      register: r_ingress
+      retries: 5
+      delay: 5
+      until: r_ingress.resources | default([]) | length == 1
+
+    - name: "Set subdomain fact"
+      ansible.builtin.set_fact:
+        e2e_subdomain: "{{ r_ingress.resources[0].status.domain }}"
+
+    # ----------------------------------------------------------------------
+    # Section 1: Foundational application platform
+    # ----------------------------------------------------------------------
+
+    - name: "Module 1 — Developer experience (Dev Spaces, GitLab, Quarkus app)"
+      tags: ["module-01"]
+      block:
+        - name: "M1 — Dev Spaces CheCluster is ready"
+          kubernetes.core.k8s_info:
+            api_version: org.eclipse.che/v2
+            kind: CheCluster
+            namespace: openshift-devspaces
+            name: devspaces
+          register: r_m1_che
+          retries: 3
+          delay: 10
+          until:
+            - r_m1_che.resources | default([]) | length == 1
+            - (r_m1_che.resources[0].status.chePhase | default('')) == 'Active'
+
+        - name: "M1 — GitLab webservice deployment is available"
+          kubernetes.core.k8s_info:
+            api_version: apps/v1
+            kind: Deployment
+            namespace: gitlab
+            label_selectors:
+              - app=webservice
+          register: r_m1_gitlab
+          retries: 3
+          delay: 10
+          until:
+            - r_m1_gitlab.resources | default([]) | length > 0
+            - >-
+              r_m1_gitlab.resources
+              | rejectattr('status.availableReplicas', 'defined')
+              | list | length == 0
+
+        - name: "M1 — Parasol Insurance application namespace has running workloads"
+          kubernetes.core.k8s_info:
+            api_version: apps/v1
+            kind: Deployment
+            namespace: parasol-insurance-dev
+          register: r_m1_parasol
+          retries: 3
+          delay: 10
+          until: r_m1_parasol.resources | default([]) | length > 0
+
+        - name: "M1 — assert Parasol workloads have available replicas"
+          ansible.builtin.assert:
+            that:
+              - >-
+                r_m1_parasol.resources
+                | selectattr('status.availableReplicas', 'defined')
+                | selectattr('status.availableReplicas', 'ge', 1)
+                | list | length > 0
+            fail_msg: "No Parasol Insurance deployment has an available replica."
+            success_msg: "Parasol Insurance workloads are running."
+
+    - name: "Module 2 — CI/CD pipeline (Pipelines, SonarQube, Quay, Argo CD)"
+      tags: ["module-02"]
+      block:
+        - name: "M2 — OpenShift Pipelines TektonConfig is ready"
+          kubernetes.core.k8s_info:
+            api_version: operator.tekton.dev/v1alpha1
+            kind: TektonConfig
+            name: config
+          register: r_m2_tekton
+          retries: 3
+          delay: 10
+          until:
+            - r_m2_tekton.resources | default([]) | length == 1
+            - >-
+              r_m2_tekton.resources[0].status.conditions | default([])
+              | selectattr('type', 'equalto', 'Ready')
+              | selectattr('status', 'equalto', 'True')
+              | list | length == 1
+
+        - name: "M2 — SonarQube deployment is available"
+          kubernetes.core.k8s_info:
+            api_version: apps/v1
+            kind: Deployment
+            namespace: sonarqube
+          register: r_m2_sonar
+          retries: 3
+          delay: 10
+          until:
+            - >-
+              r_m2_sonar.resources | default([])
+              | selectattr('status.availableReplicas', 'defined')
+              | selectattr('status.availableReplicas', 'ge', 1)
+              | list | length > 0
+
+        - name: "M2 — Quay registry route responds"
+          ansible.builtin.uri:
+            url: "https://quay.{{ e2e_subdomain }}"
+            method: GET
+            validate_certs: false
+            status_code: [200, 301, 302, 303, 307, 308, 401, 403]
+            timeout: "{{ e2e_route_timeout }}"
+          register: r_m2_quay
+          retries: 3
+          delay: 10
+          until: r_m2_quay.status is defined
+
+        - name: "M2 — Argo CD Parasol Insurance Application is Synced and Healthy"
+          kubernetes.core.k8s_info:
+            api_version: argoproj.io/v1alpha1
+            kind: Application
+            namespace: openshift-gitops
+            name: parasol-insurance
+          register: r_m2_argo
+          retries: 5
+          delay: 15
+          until:
+            - r_m2_argo.resources | default([]) | length == 1
+            - (r_m2_argo.resources[0].status.sync.status | default('')) == 'Synced'
+            - (r_m2_argo.resources[0].status.health.status | default('')) == 'Healthy'
+
+    - name: "Module 3 — Platform operations (Service Mesh/Kiali, HPA, Vault, ESO)"
+      tags: ["module-03"]
+      block:
+        - name: "M3 — Kiali route responds"
+          ansible.builtin.uri:
+            url: "https://kiali-istio-system.{{ e2e_subdomain }}"
+            method: GET
+            validate_certs: false
+            status_code: [200, 301, 302, 303, 307, 308, 401, 403]
+            timeout: "{{ e2e_route_timeout }}"
+          register: r_m3_kiali
+          retries: 3
+          delay: 10
+          until: r_m3_kiali.status is defined
+          # TODO: confirm the Kiali route namespace/host once Service Mesh 3.x
+          # layout is verified on an integration deploy.
+
+        - name: "M3 — a HorizontalPodAutoscaler exists for the Parasol app"
+          kubernetes.core.k8s_info:
+            api_version: autoscaling/v2
+            kind: HorizontalPodAutoscaler
+            namespace: parasol-insurance-dev
+          register: r_m3_hpa
+          retries: 3
+          delay: 10
+          until: r_m3_hpa.resources | default([]) | length > 0
+
+        - name: "M3 — Vault pod is running"
+          kubernetes.core.k8s_info:
+            api_version: v1
+            kind: Pod
+            namespace: vault
+            label_selectors:
+              - app.kubernetes.io/name=vault
+          register: r_m3_vault
+          retries: 3
+          delay: 10
+          until:
+            - >-
+              r_m3_vault.resources | default([])
+              | selectattr('status.phase', 'equalto', 'Running')
+              | list | length > 0
+
+        - name: "M3 — External Secrets controller is available"
+          kubernetes.core.k8s_info:
+            api_version: apps/v1
+            kind: Deployment
+            namespace: external-secrets
+          register: r_m3_eso
+          retries: 3
+          delay: 10
+          until:
+            - >-
+              r_m3_eso.resources | default([])
+              | selectattr('status.availableReplicas', 'defined')
+              | selectattr('status.availableReplicas', 'ge', 1)
+              | list | length > 0
+
+    # ----------------------------------------------------------------------
+    # Section 2: Advanced application platform
+    # ----------------------------------------------------------------------
+
+    - name: "Module 4 — Developer Hub and Software Catalog (RHDH, Keycloak)"
+      tags: ["module-04"]
+      block:
+        - name: "M4 — Developer Hub Backstage CR is deployed"
+          kubernetes.core.k8s_info:
+            api_version: rhdh.redhat.com/v1alpha3
+            kind: Backstage
+            namespace: rhdh
+            name: developer-hub
+          register: r_m4_rhdh
+          retries: 5
+          delay: 15
+          until: r_m4_rhdh.resources | default([]) | length == 1
+          # TODO: pin the Backstage CRD apiVersion to the RHDH version shipped by
+          # the operator subscription once confirmed on an integration deploy.
+
+        - name: "M4 — Developer Hub route responds"
+          ansible.builtin.uri:
+            url: "https://developer-hub-rhdh.{{ e2e_subdomain }}"
+            method: GET
+            validate_certs: false
+            status_code: [200, 301, 302, 303, 307, 308, 401, 403]
+            timeout: "{{ e2e_route_timeout }}"
+          register: r_m4_rhdh_route
+          retries: 3
+          delay: 10
+          until: r_m4_rhdh_route.status is defined
+
+        - name: "M4 — Keycloak StatefulSet is available"
+          kubernetes.core.k8s_info:
+            api_version: apps/v1
+            kind: StatefulSet
+            namespace: keycloak
+          register: r_m4_kc
+          retries: 3
+          delay: 10
+          until:
+            - >-
+              r_m4_kc.resources | default([])
+              | selectattr('status.readyReplicas', 'defined')
+              | selectattr('status.readyReplicas', 'ge', 1)
+              | list | length > 0
+
+    - name: "Module 5 — Secure development workflow (Dev Spaces, ACS, pipeline)"
+      tags: ["module-05"]
+      block:
+        - name: "M5 — ACS Central is available"
+          kubernetes.core.k8s_info:
+            api_version: apps/v1
+            kind: Deployment
+            namespace: stackrox
+            name: central
+          register: r_m5_acs
+          retries: 5
+          delay: 15
+          until:
+            - r_m5_acs.resources | default([]) | length == 1
+            - (r_m5_acs.resources[0].status.availableReplicas | default(0)) | int >= 1
+
+        - name: "M5 — ACS Central route responds"
+          ansible.builtin.uri:
+            url: "https://central-stackrox.{{ e2e_subdomain }}"
+            method: GET
+            validate_certs: false
+            status_code: [200, 301, 302, 303, 307, 308, 401, 403]
+            timeout: "{{ e2e_route_timeout }}"
+          register: r_m5_acs_route
+          retries: 3
+          delay: 10
+          until: r_m5_acs_route.status is defined
+
+    - name: "Module 6 — Trusted software supply chain (TPA, RHTAS)"
+      tags: ["module-06"]
+      block:
+        - name: "M6 — Trusted Profile Analyzer server deployment is available"
+          kubernetes.core.k8s_info:
+            api_version: apps/v1
+            kind: Deployment
+            namespace: trusted-profile-analyzer
+          register: r_m6_tpa
+          retries: 5
+          delay: 15
+          until:
+            - >-
+              r_m6_tpa.resources | default([])
+              | selectattr('status.availableReplicas', 'defined')
+              | selectattr('status.availableReplicas', 'ge', 1)
+              | list | length > 0
+
+        - name: "M6 — Trusted Artifact Signer Securesign instance is deployed"
+          kubernetes.core.k8s_info:
+            api_version: rhtas.redhat.com/v1alpha1
+            kind: Securesign
+            namespace: trusted-artifact-signer
+            name: securesign
+          register: r_m6_rhtas
+          retries: 5
+          delay: 15
+          until: r_m6_rhtas.resources | default([]) | length == 1
+          # TODO: once the Securesign status schema is confirmed, assert on its
+          # ready condition rather than mere existence.
+
+    # ----------------------------------------------------------------------
+    # Section 3: Intelligent applications
+    # ----------------------------------------------------------------------
+
+    - name: "Module 7 — AI-enhanced applications (LLM routing, MaaS endpoint)"
+      tags: ["module-07"]
+      block:
+        - name: "M7 — MaaS / LiteLLM inference endpoint is reachable"
+          ansible.builtin.uri:
+            url: "https://litellm-prod-frontend.apps.maas.redhatworkshops.io"
+            method: GET
+            validate_certs: true
+            status_code: [200, 301, 302, 303, 307, 308, 401, 403, 404]
+            timeout: "{{ e2e_route_timeout }}"
+          register: r_m7_maas
+          retries: 3
+          delay: 10
+          until: r_m7_maas.status is defined
+
+        - name: "M7 — Parasol Insurance AI email-routing workload is running"
+          kubernetes.core.k8s_info:
+            api_version: apps/v1
+            kind: Deployment
+            namespace: parasol-insurance-dev
+          register: r_m7_parasol
+          retries: 3
+          delay: 10
+          until: r_m7_parasol.resources | default([]) | length > 0
+
+        - name: "M7 — assert at least one Parasol workload is available for the AI feature"
+          ansible.builtin.assert:
+            that:
+              - >-
+                r_m7_parasol.resources
+                | selectattr('status.availableReplicas', 'defined')
+                | selectattr('status.availableReplicas', 'ge', 1)
+                | list | length > 0
+            fail_msg: "Parasol Insurance workloads are not available to back the AI email-routing demo."
+            success_msg: "Parasol Insurance AI-enhanced application is running."
+          # TODO: drive a live inference request through the email-routing
+          # endpoint and assert on the classified result once the public route
+          # and request contract are confirmed on an integration deploy.
+
+    - name: "E2E summary"
+      ansible.builtin.debug:
+        msg: >-
+          E2E PASSED — all seven demo modules have their backing platform
+          components deployed and reporting healthy on subdomain
+          {{ e2e_subdomain }}.
